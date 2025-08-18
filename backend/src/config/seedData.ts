@@ -338,6 +338,8 @@ export const seedDatabase = async (): Promise<void> => {
     console.log('🔗 插入关系数据...');
     for (let i = 0; i < seedRelationships.length; i++) {
       const relationship = seedRelationships[i];
+      if (!relationship) continue; // 跳过undefined的关系
+      
       const fromId = enterpriseIds[i % enterpriseIds.length];
       const toId = enterpriseIds[(i + 1) % enterpriseIds.length];
       

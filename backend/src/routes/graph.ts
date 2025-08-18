@@ -67,7 +67,7 @@ router.get('/', authenticate, requirePermission('view_graph'), async (req: Reque
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -75,7 +75,7 @@ router.get('/', authenticate, requirePermission('view_graph'), async (req: Reque
     
   } catch (error) {
     console.error('Get graph data error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取图谱数据失败',
       timestamp: new Date().toISOString()
@@ -182,7 +182,7 @@ router.get('/enterprise/:id', authenticate, requirePermission('view_graph'), asy
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -190,7 +190,7 @@ router.get('/enterprise/:id', authenticate, requirePermission('view_graph'), asy
     
   } catch (error) {
     console.error('Get enterprise graph error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取企业关系图谱失败',
       timestamp: new Date().toISOString()
@@ -248,7 +248,7 @@ router.get('/path', authenticate, requirePermission('view_graph'), async (req: R
         }]
       }));
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: { paths },
         timestamp: new Date().toISOString()
@@ -260,7 +260,7 @@ router.get('/path', authenticate, requirePermission('view_graph'), async (req: R
     
   } catch (error) {
     console.error('Get path error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取关系路径失败',
       timestamp: new Date().toISOString()

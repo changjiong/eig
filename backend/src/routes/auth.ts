@@ -21,14 +21,14 @@ router.post('/login', async (req, res) => {
     const result = await AuthService.login({ email, password });
     
     if (result.success) {
-      res.status(200).json(result);
+      return res.status(200).json(result);
     } else {
-      res.status(401).json(result);
+      return res.status(401).json(result);
     }
     
   } catch (error) {
     console.error('Login route error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '登录服务异常，请稍后重试',
       timestamp: new Date().toISOString()
@@ -47,7 +47,7 @@ router.get('/me', authenticate, async (req, res) => {
       });
     }
     
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: req.user,
       timestamp: new Date().toISOString()
@@ -55,7 +55,7 @@ router.get('/me', authenticate, async (req, res) => {
     
   } catch (error) {
     console.error('Get user info error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取用户信息失败',
       timestamp: new Date().toISOString()
@@ -69,7 +69,7 @@ router.post('/logout', authenticate, async (req, res) => {
     // 这里可以添加服务端登出逻辑，比如将token加入黑名单
     // 目前客户端删除token即可实现登出
     
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: '登出成功',
       timestamp: new Date().toISOString()
@@ -77,7 +77,7 @@ router.post('/logout', authenticate, async (req, res) => {
     
   } catch (error) {
     console.error('Logout route error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '登出失败',
       timestamp: new Date().toISOString()
@@ -102,11 +102,11 @@ router.post('/refresh', authenticate, async (req, res) => {
       password: '' // 这里需要改进，不应该重新输入密码
     });
     
-    res.status(200).json(result);
+    return res.status(200).json(result);
     
   } catch (error) {
     console.error('Token refresh error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'token刷新失败',
       timestamp: new Date().toISOString()

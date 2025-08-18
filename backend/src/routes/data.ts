@@ -343,7 +343,7 @@ router.put('/tasks/:id', authenticate, requirePermission('manage_data'), async (
         createdAt: new Date(row.created_at)
       };
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: task,
         message: '任务状态更新成功',
@@ -356,7 +356,7 @@ router.put('/tasks/:id', authenticate, requirePermission('manage_data'), async (
     
   } catch (error) {
     console.error('Update task error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新任务失败',
       timestamp: new Date().toISOString()

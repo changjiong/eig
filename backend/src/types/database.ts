@@ -175,9 +175,9 @@ export interface Client {
   priority: 'high' | 'medium' | 'low';
   assignedTo: string; // 负责人ID
   assignedToName: string; // 负责人姓名
-  lastContact?: Date;
-  nextFollowUp?: Date;
-  estimatedValue?: number;
+  lastContact?: Date | undefined;
+  nextFollowUp?: Date | undefined;
+  estimatedValue?: number | undefined;
   notes: string;
   tags: string[];
   createdAt: Date;
@@ -209,7 +209,7 @@ export interface DataSource {
   name: string;
   type: 'database' | 'api' | 'file' | 'web_scraping';
   status: 'connected' | 'disconnected' | 'error' | 'syncing';
-  lastSync?: Date;
+  lastSync?: Date | undefined;
   totalRecords: number;
   errorCount: number;
   config: Record<string, any>;
@@ -227,8 +227,8 @@ export interface DataImportTask {
   totalRecords: number;
   processedRecords: number;
   errorRecords: number;
-  startTime?: Date;
-  endTime?: Date;
+  startTime?: Date | undefined;
+  endTime?: Date | undefined;
   errorMessage?: string;
   createdBy: string;
   createdAt: Date;

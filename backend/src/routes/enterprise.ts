@@ -159,7 +159,7 @@ router.get('/:id', authenticate, requirePermission('view_enterprise'), async (re
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -167,7 +167,7 @@ router.get('/:id', authenticate, requirePermission('view_enterprise'), async (re
     
   } catch (error) {
     console.error('Get enterprise detail error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取企业详情失败',
       timestamp: new Date().toISOString()
@@ -253,7 +253,7 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
         updatedAt: new Date(row.updated_at)
       };
       
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         data: enterprise,
         message: '企业创建成功',
@@ -266,7 +266,7 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
     
   } catch (error) {
     console.error('Create enterprise error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '创建企业失败',
       timestamp: new Date().toISOString()
@@ -354,7 +354,7 @@ router.put('/:id', authenticate, requirePermission('manage_data'), async (req: R
         updatedAt: new Date(row.updated_at)
       };
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: enterprise,
         message: '企业更新成功',
@@ -367,7 +367,7 @@ router.put('/:id', authenticate, requirePermission('manage_data'), async (req: R
     
   } catch (error) {
     console.error('Update enterprise error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新企业失败',
       timestamp: new Date().toISOString()

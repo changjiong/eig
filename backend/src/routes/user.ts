@@ -70,7 +70,7 @@ router.get('/', authenticate, requirePermission('user_management'), async (req: 
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -78,7 +78,7 @@ router.get('/', authenticate, requirePermission('user_management'), async (req: 
     
   } catch (error) {
     console.error('Get users error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取用户列表失败',
       timestamp: new Date().toISOString()
@@ -128,7 +128,7 @@ router.get('/:id', authenticate, requirePermission('user_management'), async (re
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -136,7 +136,7 @@ router.get('/:id', authenticate, requirePermission('user_management'), async (re
     
   } catch (error) {
     console.error('Get user detail error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取用户详情失败',
       timestamp: new Date().toISOString()
@@ -161,14 +161,14 @@ router.post('/', authenticate, requirePermission('user_management'), async (req:
     });
     
     if (result.success) {
-      res.status(201).json(result);
+      return res.status(201).json(result);
     } else {
-      res.status(400).json(result);
+      return res.status(400).json(result);
     }
     
   } catch (error) {
     console.error('Create user error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '创建用户失败',
       timestamp: new Date().toISOString()
@@ -232,7 +232,7 @@ router.put('/:id', authenticate, requirePermission('user_management'), async (re
         updatedAt: new Date(row.updated_at)
       };
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: user,
         message: '用户更新成功',
@@ -245,7 +245,7 @@ router.put('/:id', authenticate, requirePermission('user_management'), async (re
     
   } catch (error) {
     console.error('Update user error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新用户失败',
       timestamp: new Date().toISOString()
@@ -301,7 +301,7 @@ router.patch('/:id/status', authenticate, requirePermission('user_management'), 
         updatedAt: new Date(row.updated_at)
       };
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: user,
         message: `用户已${isActive ? '启用' : '禁用'}`,
@@ -314,7 +314,7 @@ router.patch('/:id/status', authenticate, requirePermission('user_management'), 
     
   } catch (error) {
     console.error('Update user status error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新用户状态失败',
       timestamp: new Date().toISOString()

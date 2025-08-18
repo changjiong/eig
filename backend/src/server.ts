@@ -67,7 +67,7 @@ app.use(`${appConfig.apiPrefix}/data`, dataRoutes);
 app.use(`${appConfig.apiPrefix}/users`, userRoutes);
 
 // 404处理
-app.use('*', (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: `路由 ${req.originalUrl} 不存在`,

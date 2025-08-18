@@ -89,7 +89,7 @@ router.get('/', authenticate, requirePermission('view_clients'), async (req: Req
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -97,7 +97,7 @@ router.get('/', authenticate, requirePermission('view_clients'), async (req: Req
     
   } catch (error) {
     console.error('Get clients error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取客户列表失败',
       timestamp: new Date().toISOString()
@@ -151,7 +151,7 @@ router.get('/:id', authenticate, requirePermission('view_clients'), async (req: 
         timestamp: new Date().toISOString()
       };
       
-      res.status(200).json(response);
+      return res.status(200).json(response);
       
     } finally {
       client.release();
@@ -159,7 +159,7 @@ router.get('/:id', authenticate, requirePermission('view_clients'), async (req: 
     
   } catch (error) {
     console.error('Get client detail error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取客户详情失败',
       timestamp: new Date().toISOString()
@@ -223,7 +223,7 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
         updatedAt: new Date(row.updated_at)
       };
       
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         data: newClient,
         message: '客户创建成功',
@@ -236,7 +236,7 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
     
   } catch (error) {
     console.error('Create client error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '创建客户失败',
       timestamp: new Date().toISOString()
@@ -322,7 +322,7 @@ router.put('/:id', authenticate, requirePermission('manage_data'), async (req: R
         updatedAt: new Date(row.updated_at)
       };
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         data: updatedClient,
         message: '客户更新成功',
@@ -335,7 +335,7 @@ router.put('/:id', authenticate, requirePermission('manage_data'), async (req: R
     
   } catch (error) {
     console.error('Update client error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新客户失败',
       timestamp: new Date().toISOString()
@@ -361,7 +361,7 @@ router.delete('/:id', authenticate, requirePermission('manage_data'), async (req
         });
       }
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: '客户删除成功',
         timestamp: new Date().toISOString()
@@ -373,7 +373,7 @@ router.delete('/:id', authenticate, requirePermission('manage_data'), async (req
     
   } catch (error) {
     console.error('Delete client error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '删除客户失败',
       timestamp: new Date().toISOString()

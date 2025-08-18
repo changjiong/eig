@@ -13,7 +13,7 @@ export const appConfig = {
   // JWT配置
   jwt: {
     secret: process.env.JWT_SECRET || 'eig_jwt_secret_key_2025_very_secure',
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+    expiresIn: '24h' as const
   },
   
   // CORS配置
