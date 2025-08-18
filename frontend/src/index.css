@@ -1,0 +1,213 @@
+/**
+ * =====================================
+ *         UI Design Guide
+ * =====================================
+ * 
+ * Project: Enterprise Intelligence Graph (EIG) Platform
+ * Type: Banking Industry Enterprise Application
+ * 
+ * Design Language
+ * Style: Professional · Data-driven · Trustworthy
+ * Vision: Clean professional banking interface with clear data visualization
+ * 
+ * Characteristics:
+ * - Professional: Enterprise-grade design suitable for banking industry users
+ * - Data-centric: Optimized for complex data visualization and graph display
+ * - Trustworthy: Design elements that convey security and reliability
+ * 
+ * Philosophy:
+ * The EIG platform interface balances sophisticated data visualization with an
+ * approachable user experience, designed specifically for banking professionals.
+ * The design prioritizes clarity and information hierarchy to help users make
+ * data-driven decisions efficiently.
+ * 
+ * Reference: Bloomberg Terminal, Tableau, Neo4j Bloom with banking-specific adaptations
+ * =====================================
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Main colors - based on professional banking theme */
+    --background: 0 0% 100%;
+    --foreground: 218 35% 18%;
+    /* Deep navy for main text - more readable than pure black */
+    
+    /* Primary - Deep blue (#1A365D) for main elements */
+    --primary: 215 55% 23%;
+    --primary-foreground: 0 0% 98%;
+    
+    /* Secondary - Light blue (#4299E1) for interactive elements */
+    --secondary: 206 92% 67%;
+    --secondary-foreground: 215 55% 23%;
+    
+    /* Accent - Orange (#ED8936) for CTAs and highlights */
+    --accent: 27 96% 61%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Destructive - Refined red for alerts and errors */
+    --destructive: 0 65% 52%;
+    --destructive-foreground: 0 0% 98%;
+    
+    /* Card and popover elements */
+    --card: 210 20% 98%;
+    --card-foreground: 218 35% 18%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 218 35% 18%;
+    
+    /* Neutral UI elements */
+    --muted: 210 15% 94%;
+    --muted-foreground: 215 25% 35%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 215 55% 23%;
+    
+    /* Graph visualization colors */
+    --node-enterprise: 215 55% 23%;
+    /* Dark blue for enterprise nodes */
+    --node-person: 206 92% 67%;
+    /* Light blue for person nodes */
+    --node-product: 27 96% 61%;
+    /* Orange for product nodes */
+    
+    /* Relationship colors */
+    --rel-investment: 120 40% 55%;
+    /* Green for investment */
+    --rel-guarantee: 27 96% 61%;
+    /* Orange for guarantee */
+    --rel-supply: 206 92% 67%;
+    /* Blue for supply chain */
+    --rel-risk: 0 65% 52%;
+    /* Red for risk relationships */
+    
+    /* Chart colors - professionally selected palette */
+    --chart-1: 215 55% 23%;
+    /* Primary blue */
+    --chart-2: 206 92% 67%;
+    /* Secondary blue */
+    --chart-3: 27 96% 61%;
+    /* Orange */
+    --chart-4: 120 40% 55%;
+    /* Green */
+    --chart-5: 0 65% 52%;
+    /* Red */
+    
+    /* Score colors for enterprise assessments */
+    --score-excellent: 120 40% 55%;
+    /* Green */
+    --score-good: 145 63% 42%;
+    /* Teal */
+    --score-average: 206 92% 67%;
+    /* Blue */
+    --score-warning: 27 96% 61%;
+    /* Orange */
+    --score-poor: 0 65% 52%;
+    /* Red */
+    
+    --radius: 0.375rem
+  ;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%}
+  .dark {
+    /* Main colors - dark banking theme */
+    --background: 218 35% 10%;
+    --foreground: 210 20% 98%;
+    
+    /* Primary colors - inversed for dark mode */
+    --primary: 206 92% 67%;
+    /* Light blue becomes primary in dark mode */
+    --primary-foreground: 218 35% 18%;
+    
+    /* Secondary - deeper blue for dark mode secondary elements */
+    --secondary: 215 35% 25%;
+    --secondary-foreground: 0 0% 98%;
+    
+    /* Accent - slightly lighter orange for dark mode */
+    --accent: 27 96% 67%;
+    --accent-foreground: 0 0% 98%;
+    
+    /* Destructive - brighter red for visibility in dark mode */
+    --destructive: 0 70% 58%;
+    --destructive-foreground: 0 0% 98%;
+    
+    /* Card and popover elements */
+    --card: 218 35% 14%;
+    --card-foreground: 210 20% 98%;
+    --popover: 218 35% 12%;
+    --popover-foreground: 210 20% 98%;
+    
+    /* Neutral UI elements for dark mode */
+    --muted: 218 35% 18%;
+    --muted-foreground: 215 20% 75%;
+    --border: 218 35% 22%;
+    --input: 218 35% 22%;
+    --ring: 206 92% 67%;
+    
+    /* Graph visualization colors - brighter for dark mode */
+    --node-enterprise: 206 92% 67%;
+    /* Light blue for enterprise nodes in dark mode */
+    --node-person: 210 20% 98%;
+    /* White for person nodes */
+    --node-product: 27 96% 67%;
+    /* Light orange for product nodes */
+    
+    /* Relationship colors - adjusted for dark background */
+    --rel-investment: 140 60% 60%;
+    /* Brighter green */
+    --rel-guarantee: 27 96% 67%;
+    /* Brighter orange */
+    --rel-supply: 206 92% 70%;
+    /* Brighter blue */
+    --rel-risk: 0 70% 60%;
+    /* Brighter red */
+    
+    /* Chart colors - brighter palette for dark mode */
+    --chart-1: 206 92% 67%;
+    /* Light blue */
+    --chart-2: 215 55% 50%;
+    /* Mid blue */
+    --chart-3: 27 96% 67%;
+    /* Orange */
+    --chart-4: 140 60% 60%;
+    /* Green */
+    --chart-5: 0 70% 60%;
+    /* Red */
+    
+    /* Score colors adjusted for dark mode */
+    --score-excellent: 140 60% 60%;
+    /* Brighter green */
+    --score-good: 170 70% 45%;
+    /* Brighter teal */
+    --score-average: 206 92% 70%;
+    /* Brighter blue */
+    --score-warning: 27 96% 67%;
+    /* Brighter orange */
+    --score-poor: 0 70% 60%;
+    /* Brighter red */
+  ;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%}
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
