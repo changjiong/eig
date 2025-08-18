@@ -150,23 +150,23 @@ export interface GraphData {
 // 客户数据类型
 export interface Client {
   id: string;
-  enterpriseId: string;
-  enterprise: Enterprise;
-  
-  // 客户信息
-  accountManager: string; // 客户经理
-  status: 'active' | 'potential' | 'inactive' | 'lost';
-  clientLevel: 'A' | 'B' | 'C' | 'D';
-  
-  // 业务信息
-  products: string[]; // 使用的产品ID列表
-  totalRevenue: number; // 总业务量
-  lastContactDate: string;
-  nextFollowUpDate?: string;
-  
-  // 时间戳
-  createdAt: string;
-  updatedAt: string;
+  name: string;
+  company: string;
+  industry: string;
+  position: string;
+  email: string;
+  phone: string;
+  status: 'active' | 'inactive' | 'potential' | 'lost';
+  priority: 'high' | 'medium' | 'low';
+  assignedTo: string; // 负责人ID
+  assignedToName: string; // 负责人姓名
+  lastContact?: Date | undefined;
+  nextFollowUp?: Date | undefined;
+  estimatedValue?: number | undefined;
+  notes: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // 搜索参数类型
