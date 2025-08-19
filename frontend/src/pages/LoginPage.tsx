@@ -131,25 +131,25 @@ export default function LoginPage() {
               <Badge variant="outline" className="justify-start p-2">
                 <div>
                   <div className="font-medium">管理员</div>
-                  <div className="text-muted-foreground">admin@bank.com</div>
+                  <div className="text-muted-foreground">admin@eig.com</div>
                 </div>
               </Badge>
               <Badge variant="outline" className="justify-start p-2">
                 <div>
                   <div className="font-medium">部门经理</div>
-                  <div className="text-muted-foreground">manager@bank.com</div>
+                  <div className="text-muted-foreground">manager@eig.com</div>
                 </div>
               </Badge>
               <Badge variant="outline" className="justify-start p-2">
                 <div>
                   <div className="font-medium">分析师</div>
-                  <div className="text-muted-foreground">analyst@bank.com</div>
+                  <div className="text-muted-foreground">analyst@eig.com</div>
                 </div>
               </Badge>
               <Badge variant="outline" className="justify-start p-2">
                 <div>
                   <div className="font-medium">客户经理</div>
-                  <div className="text-muted-foreground">viewer@bank.com</div>
+                  <div className="text-muted-foreground">viewer@eig.com</div>
                 </div>
               </Badge>
             </div>

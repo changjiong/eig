@@ -1,381 +1,257 @@
-import { useRef, useEffect, useState } from "react";
-import * as d3 from "d3";
-import { SimulationNodeDatum } from "d3";
-import { cn } from "@/lib/utils";
-
-interface Node extends SimulationNodeDatum {
-  id: string;
-  name: string;
-  type: "enterprise" | "person" | "product";
-  value?: number;
-}
-
-interface Link extends d3.SimulationLinkDatum<Node> {
-  source: string;
-  target: string;
-  type: "investment" | "guarantee" | "supply" | "risk" | "other";
-  value?: number;
-}
-
-interface GraphData {
-  nodes: Node[];
-  links: Link[];
-}
+import React, { useEffect, useRef, useState } from 'react';
+import * as d3 from 'd3';
+import { GraphData, GraphNode, GraphLink } from '@/types/database';
 
 interface GraphVisualizationProps {
-  data: GraphData;
+  data?: GraphData;
   width?: number;
   height?: number;
+  onNodeClick?: (node: GraphNode) => void;
   className?: string;
 }
 
-// Mock data for development purposes
-const mockData: GraphData = {
-  nodes: [
-    { id: "1", name: "XYZ科技有限公司", type: "enterprise" },
-    { id: "2", name: "ABC控股集团", type: "enterprise" },
-    { id: "3", name: "张三", type: "person" },
-    { id: "4", name: "李四", type: "person" },
-    { id: "5", name: "王五", type: "person" },
-    { id: "6", name: "123投资公司", type: "enterprise" },
-    { id: "7", name: "企业贷款产品", type: "product" },
-  ],
-  links: [
-    { source: "3", target: "1", type: "investment", value: 0.8 },
-    { source: "4", target: "2", type: "investment", value: 0.5 },
-    { source: "1", target: "2", type: "supply", value: 0.7 },
-    { source: "5", target: "4", type: "other", value: 0.3 },
-    { source: "6", target: "1", type: "investment", value: 0.9 },
-    { source: "2", target: "7", type: "other", value: 0.4 },
-    { source: "1", target: "7", type: "guarantee", value: 0.6 },
-  ],
-};
-
-export default function GraphVisualization({
-  data = mockData,
+const GraphVisualization: React.FC<GraphVisualizationProps> = ({
+  data,
   width = 800,
   height = 600,
-  className,
-}: GraphVisualizationProps) {
-  // For hover state and selected node
-  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
-  const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ content: string; x: number; y: number } | null>(null);
+  onNodeClick,
+  className = ''
+}) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [isLoading, setIsLoading] = useState(!data);
 
   useEffect(() => {
-    if (!svgRef.current) return;
+    if (!data || !data.nodes || !data.links) {
+      setIsLoading(true);
+      return;
+    }
 
+    setIsLoading(false);
     const svg = d3.select(svgRef.current);
+    
+    // 清除之前的内容
     svg.selectAll("*").remove();
 
-    // Create the simulation
-    const simulation = d3
-      .forceSimulation()
-      .force(
-        "link",
-        d3
-          .forceLink()
-          .id((d: any) => d.id)
-          .distance(100)
-      )
-      .force("charge", d3.forceManyBody().strength(-400))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("x", d3.forceX(width / 2).strength(0.1))
-      .force("y", d3.forceY(height / 2).strength(0.1));
+    // 创建容器组
+    const container = svg.append("g");
 
-    // Prepare the data
-    const nodeMap = new Map(data.nodes.map((node) => [node.id, node]));
-    const links = data.links.map((link) => ({
-      source: link.source,
-      target: link.target,
-      type: link.type,
-      value: link.value,
-    }));
-
-    const nodes = data.nodes.map((node) => ({ ...node }));
-
-    // Create the link lines
-    const link = svg
-      .append("g")
-      .attr("stroke-opacity", 0.6)
-      .selectAll("line")
-      .data(links)
-      .join("line")
-      .attr("stroke-width", (d) => (d.value ? d.value * 3 + 1 : 2))
-      .attr("stroke", (d) => {
-        switch (d.type) {
-          case "investment":
-            return "hsl(var(--rel-investment))";
-          case "guarantee":
-            return "hsl(var(--rel-guarantee))";
-          case "supply":
-            return "hsl(var(--rel-supply))";
-          case "risk":
-            return "hsl(var(--rel-risk))";
-          default:
-            return "hsl(var(--muted-foreground))";
-        }
-      })
-      .attr("stroke-dasharray", (d) => {
-        switch (d.type) {
-          case "investment":
-            return "";
-          case "guarantee":
-            return "5,5";
-          case "supply":
-            return "";
-          case "risk":
-            return "2,2";
-          default:
-            return "";
-        }
+    // 设置缩放行为
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on("zoom", (event) => {
+        container.attr("transform", event.transform);
       });
 
-    // Create the node groups
-    const node = svg
-      .append("g")
-      .selectAll(".node")
-      .data(nodes)
-      .join("g")
-      .attr("class", "node")
-      .attr("cursor", "pointer")
-      .attr("data-id", d => d.id)
-      .call(
-        d3
-          .drag<SVGGElement, Node>()
-          .on("start", dragstarted)
-          .on("drag", dragged)
-          .on("end", dragended)
-      )
-      .on("mouseover", (event, d) => {
-        setHoveredNode(d.id);
-        // Show tooltip
-        setTooltip({
-          content: `${d.name} (${d.type})`,
-          x: event.pageX,
-          y: event.pageY
-        });
-      })
-      .on("mouseout", () => {
-        setHoveredNode(null);
-        setTooltip(null);
-      })
-      .on("click", (event, d) => {
-        event.stopPropagation();
-        setSelectedNode(d.id === selectedNode ? null : d.id);
-      });
-
-    // Add the node shapes based on type
-    node.each(function (d) {
-      const g = d3.select(this);
-      const nodeSize = d.value ? 10 + d.value * 5 : 10; // Size based on value if available
-      
-      if (d.type === "enterprise") {
-        g.append("circle")
-          .attr("r", nodeSize)
-          .attr("fill", "hsl(var(--node-enterprise))")
-          .attr("fill-opacity", 0.8)
-          .attr("stroke", "white")
-          .attr("stroke-width", 1.5)
-          .classed("node-shape", true);
-      } else if (d.type === "person") {
-        const rectSize = nodeSize * 1.6;
-        g.append("rect")
-          .attr("x", -rectSize/2)
-          .attr("y", -rectSize/2)
-          .attr("width", rectSize)
-          .attr("height", rectSize)
-          .attr("fill", "hsl(var(--node-person))")
-          .attr("fill-opacity", 0.8)
-          .attr("stroke", "white")
-          .attr("stroke-width", 1.5)
-          .classed("node-shape", true);
-      } else if (d.type === "product") {
-        const scale = nodeSize / 10;
-        g.append("polygon")
-          .attr(
-            "points",
-            `0,${-10 * scale} ${8.66 * scale},${5 * scale} ${-8.66 * scale},${5 * scale}` // Diamond shape scaled
-          )
-          .attr("fill", "hsl(var(--node-product))")
-          .attr("fill-opacity", 0.8)
-          .attr("stroke", "white")
-          .attr("stroke-width", 1.5)
-          .classed("node-shape", true);
-      }
-      
-      // Add a highlight circle that will be visible on hover/selection
-      g.append("circle")
-        .attr("r", nodeSize + 4)
-        .attr("fill", "none")
-        .attr("stroke", "hsl(var(--primary))")
-        .attr("stroke-width", 2)
-        .attr("opacity", 0)
-        .classed("node-highlight", true);
-    });
-
-    // Add labels to the nodes
-    node
-      .append("text")
-      .attr("dy", d => {
-        // Adjust label position based on node type and size
-        const nodeSize = d.value ? 10 + d.value * 5 : 10;
-        return d.type === "product" ? nodeSize + 12 : nodeSize + 10;
-      })
-      .attr("text-anchor", "middle")
-      .attr("font-size", "10px")
-      .attr("fill", "hsl(var(--foreground))")
-      .attr("stroke", "hsl(var(--background))")
-      .attr("stroke-width", 0.5)
-      .attr("paint-order", "stroke")
-      .attr("class", "node-label")
-      .text(d => {
-        // Truncate long names
-        return d.name.length > 15 ? d.name.slice(0, 13) + '...' : d.name;
-      });
-
-    // Set up the simulation
-    simulation.nodes(nodes).on("tick", ticked);
-    simulation.force<d3.ForceLink<Node, Link>>("link")?.links(links);
-
-    // Add zoom capability
-    const zoom = d3.zoom<SVGSVGElement, unknown>().on("zoom", zoomed);
     svg.call(zoom);
 
-    // Functions for the simulation
-    function ticked() {
+    // 创建力模拟
+    const simulation = d3.forceSimulation<GraphNode>(data.nodes)
+      .force("link", d3.forceLink<GraphNode, GraphLink>(data.links)
+        .id((d: any) => d.id)
+        .distance(100))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 2, height / 2))
+      .force("collision", d3.forceCollide().radius(30));
+
+    // 创建连线
+    const link = container.append("g")
+      .attr("class", "links")
+      .selectAll("line")
+      .data(data.links)
+      .enter().append("line")
+      .attr("stroke", "#999")
+      .attr("stroke-opacity", 0.6)
+      .attr("stroke-width", (d: GraphLink) => Math.sqrt(d.value || 1) * 2);
+
+    // 创建节点组
+    const nodeGroup = container.append("g")
+      .attr("class", "nodes")
+      .selectAll("g")
+      .data(data.nodes)
+      .enter().append("g")
+      .attr("class", "node");
+
+         // 添加节点圆圈
+     nodeGroup.append("circle")
+       .attr("r", (d: GraphNode) => {
+         const baseSize = 8;
+         const sizeMultiplier = d.value ? Math.sqrt(d.value) * 10 : baseSize;
+         return Math.max(baseSize, Math.min(25, sizeMultiplier));
+       })
+       .attr("fill", (d: GraphNode) => {
+         switch (d.type) {
+           case 'enterprise': return '#3b82f6';
+           case 'person': return '#10b981';
+           case 'product': return '#f59e0b';
+           default: return '#6b7280';
+         }
+       })
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 2)
+      .style("cursor", "pointer");
+
+    // 添加节点标签
+    nodeGroup.append("text")
+      .attr("dy", ".35em")
+      .attr("x", (d: GraphNode) => {
+        const radius = d.value ? Math.sqrt(d.value) * 10 + 8 : 16;
+        return Math.max(16, Math.min(33, radius));
+      })
+      .style("font-size", "12px")
+      .style("fill", "#333")
+      .style("font-family", "Arial, sans-serif")
+      .text((d: GraphNode) => d.name || d.id);
+
+    // 添加拖拽行为
+    const drag = d3.drag<SVGGElement, GraphNode>()
+      .on("start", (event, d) => {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      })
+      .on("drag", (event, d) => {
+        d.fx = event.x;
+        d.fy = event.y;
+      })
+      .on("end", (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      });
+
+    nodeGroup.call(drag);
+
+    // 添加点击事件
+    if (onNodeClick) {
+      nodeGroup.on("click", (event, d) => {
+        event.stopPropagation();
+        onNodeClick(d);
+      });
+    }
+
+    // 添加悬停效果
+    nodeGroup
+      .on("mouseover", function(event, d) {
+        d3.select(this).select("circle")
+          .transition()
+          .duration(200)
+          .attr("r", (d: GraphNode) => {
+            const baseSize = 8;
+            const sizeMultiplier = d.value ? Math.sqrt(d.value) * 10 : baseSize;
+            return Math.max(baseSize, Math.min(25, sizeMultiplier)) * 1.2;
+          });
+          
+        // 显示tooltip
+        d3.select("body").append("div")
+          .attr("class", "graph-tooltip")
+          .style("position", "absolute")
+          .style("background", "rgba(0,0,0,0.8)")
+          .style("color", "white")
+          .style("padding", "8px 12px")
+          .style("border-radius", "4px")
+          .style("font-size", "12px")
+          .style("pointer-events", "none")
+          .style("z-index", "1000")
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 10) + "px")
+          .html(`
+            <div><strong>${d.name || d.id}</strong></div>
+            <div>类型: ${d.type}</div>
+            ${d.industry ? `<div>行业: ${d.industry}</div>` : ''}
+            ${d.value ? `<div>权重: ${d.value.toFixed(2)}</div>` : ''}
+          `);
+      })
+      .on("mouseout", function(event, d) {
+        d3.select(this).select("circle")
+          .transition()
+          .duration(200)
+          .attr("r", (d: GraphNode) => {
+            const baseSize = 8;
+            const sizeMultiplier = d.value ? Math.sqrt(d.value) * 10 : baseSize;
+            return Math.max(baseSize, Math.min(25, sizeMultiplier));
+          });
+          
+        // 移除tooltip
+        d3.selectAll(".graph-tooltip").remove();
+      });
+
+    // 更新位置
+    simulation.on("tick", () => {
       link
         .attr("x1", (d: any) => d.source.x)
         .attr("y1", (d: any) => d.source.y)
         .attr("x2", (d: any) => d.target.x)
         .attr("y2", (d: any) => d.target.y);
 
-      node.attr("transform", (d: any) => `translate(${d.x},${d.y})`);
-    }
+      nodeGroup
+        .attr("transform", (d: GraphNode) => `translate(${d.x},${d.y})`);
+    });
 
-    function zoomed(event: any) {
-      svg
-        .selectAll("g")
-        .attr("transform", `translate(${event.transform.x},${event.transform.y}) scale(${event.transform.k})`);
-    }
-
-    function dragstarted(event: any) {
-      if (!event.active) simulation.alphaTarget(0.3).restart();
-      event.subject.fx = event.subject.x;
-      event.subject.fy = event.subject.y;
-    }
-
-    function dragged(event: any) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
-    }
-
-    function dragended(event: any) {
-      if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
-    }
-
+    // 清理函数
     return () => {
       simulation.stop();
+      d3.selectAll(".graph-tooltip").remove();
     };
-  }, [data, width, height]);
+  }, [data, width, height, onNodeClick]);
 
-  // Update highlight effect when hovered or selected node changes
-  useEffect(() => {
-    if (!svgRef.current) return;
-    
-    // Reset all highlights
-    d3.select(svgRef.current)
-      .selectAll(".node-highlight")
-      .attr("opacity", 0);
-    
-    d3.select(svgRef.current)
-      .selectAll(".node")
-      .classed("node-selected", false);
-    
-    // Add highlight to hovered node
-    if (hoveredNode) {
-      d3.select(svgRef.current)
-        .selectAll(`.node[data-id="${hoveredNode}"]`)
-        .select(".node-highlight")
-        .attr("opacity", 0.5);
-    }
-    
-    // Add highlight to selected node
-    if (selectedNode) {
-      d3.select(svgRef.current)
-        .selectAll(`.node[data-id="${selectedNode}"]`)
-        .classed("node-selected", true)
-        .select(".node-highlight")
-        .attr("opacity", 1);
-    }
-  }, [hoveredNode, selectedNode]);
-  
-  // Clear selection when clicking on the background
-  useEffect(() => {
-    const handleBackgroundClick = () => {
-      setSelectedNode(null);
-    };
-    
-    const svg = svgRef.current;
-    if (svg) {
-      svg.addEventListener('click', handleBackgroundClick);
-    }
-    
-    return () => {
-      if (svg) {
-        svg.removeEventListener('click', handleBackgroundClick);
-      }
-    };
-  }, []);
+  if (isLoading || !data) {
+    return (
+      <div className={`flex items-center justify-center ${className}`} style={{ width, height }}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-500">加载图谱数据中...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={cn(
-        "border border-border rounded-md overflow-hidden bg-card relative",
-        className
-      )}
-    >
+    <div className={`border rounded-lg overflow-hidden ${className}`}>
       <svg
         ref={svgRef}
         width={width}
         height={height}
-        className="w-full h-full"
-      ></svg>
+        style={{ background: '#f8fafc' }}
+      />
       
-      {/* Tooltip */}
-      {tooltip && (
-        <div 
-          className="absolute bg-popover text-popover-foreground text-xs py-1 px-2 rounded shadow-md z-50"
-          style={{
-            left: `${tooltip.x - 50}px`, 
-            top: `${tooltip.y - 40}px`,
-            transform: "translate(-50%, -100%)"
-          }}
-        >
-          {tooltip.content}
-        </div>
-      )}
+             {/* 图例 */}
+       <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-sm">
+         <h4 className="font-medium text-sm mb-2">节点图例</h4>
+         <div className="space-y-1 text-xs">
+           <div className="flex items-center gap-2">
+             <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+             <span>企业</span>
+           </div>
+           <div className="flex items-center gap-2">
+             <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+             <span>人员</span>
+           </div>
+           <div className="flex items-center gap-2">
+             <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+             <span>产品</span>
+           </div>
+         </div>
+       </div>
       
-      {/* Legend */}
-      <div className="absolute bottom-2 right-2 bg-card/80 backdrop-blur-sm p-2 rounded shadow-sm text-xs border border-border">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-[hsl(var(--node-enterprise))]" />
-            <span>企业</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-sm bg-[hsl(var(--node-person))]" />
-            <span>个人</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rotate-45 bg-[hsl(var(--node-product))]" />
-            <span>产品</span>
-          </div>
+      {/* 控制面板 */}
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-sm">
+        <div className="flex gap-2">
+          <button 
+            className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+            onClick={() => {
+              const svg = d3.select(svgRef.current);
+              svg.transition().duration(750).call(
+                d3.zoom<SVGSVGElement, unknown>().transform,
+                d3.zoomIdentity
+              );
+            }}
+          >
+            重置视图
+          </button>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default GraphVisualization;
