@@ -13,6 +13,7 @@ import clientRoutes from './routes/client';
 import graphRoutes from './routes/graph';
 import dataRoutes from './routes/data';
 import userRoutes from './routes/user';
+import searchRoutes from './routes/search';
 
 // 加载环境变量
 dotenv.config();
@@ -65,6 +66,7 @@ app.use(`${appConfig.apiPrefix}/clients`, clientRoutes);
 app.use(`${appConfig.apiPrefix}/graph`, graphRoutes);
 app.use(`${appConfig.apiPrefix}/data`, dataRoutes);
 app.use(`${appConfig.apiPrefix}/users`, userRoutes);
+app.use(`${appConfig.apiPrefix}/search`, searchRoutes);
 
 // 404处理
 app.use((req, res) => {

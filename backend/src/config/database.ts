@@ -159,6 +159,26 @@ export const initializeDatabase = async (): Promise<void> => {
       )
     `);
     
+    // 数据导入任务表
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS data_import_tasks (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        source_id UUID REFERENCES data_sources(id),
+        source_name VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'running', 'completed', 'failed', 'cancelled')),
+        progress INTEGER DEFAULT 0 CHECK (progress >= 0 AND progress <= 100),
+        total_records INTEGER DEFAULT 0,
+        processed_records INTEGER DEFAULT 0,
+        error_records INTEGER DEFAULT 0,
+        start_time TIMESTAMP,
+        end_time TIMESTAMP,
+        error_message TEXT,
+        created_by UUID REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
     // 创建索引
     await client.query('CREATE INDEX IF NOT EXISTS idx_enterprises_name ON enterprises(name)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_enterprises_industry ON enterprises(industry)');
@@ -166,6 +186,8 @@ export const initializeDatabase = async (): Promise<void> => {
     await client.query('CREATE INDEX IF NOT EXISTS idx_relationships_to_id ON relationships(to_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_clients_assigned_to ON clients(assigned_to)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_clients_status ON clients(status)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_data_import_tasks_status ON data_import_tasks(status)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_data_import_tasks_created_by ON data_import_tasks(created_by)');
     
     await client.query('COMMIT');
     console.log('✅ Database tables initialized successfully');
