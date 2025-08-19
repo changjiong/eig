@@ -11,7 +11,7 @@ import {
   AlertCircle,
   RefreshCw,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import StatCard from "@/components/dashboard/StatCard";
@@ -23,137 +23,32 @@ import ProspectCard from "@/components/prospects/ProspectCard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboardData } from "@/hooks/useData";
+import { ApiService } from "@/services/api";
+import { Task, Event, Prospect } from "@/types/database";
 
-// Define task type for better type safety
-type TaskType = {
-  id: string;
-  title: string;
-  description: string;
-  createdAt: string;
-  dueDate: string;
-  priority: number;
-  status: "pending" | "in_progress" | "completed" | "rejected";
-  type: "entity_review" | "relationship_review" | "event_verification";
-};
 
-// Mock data for the dashboard
-const mockTasks: TaskType[] = [
-  {
-    id: "t1",
-    title: "企业信息审核 - 新阳科技有限公司",
-    description:
-      "请审核新阳科技有限公司的基本信息和财务数据，确认数据准确性并更新风险标签。",
-    createdAt: "2025-08-10T08:30:00Z",
-    dueDate: "2025-08-16T17:00:00Z",
-    priority: 3,
-    status: "pending",
-    type: "entity_review",
-  },
-  {
-    id: "t2",
-    title: "关系审核 - 投资链关系确认",
-    description:
-      "确认华泰集团与锦程控股之间的投资关系，验证持股比例和投资时间的准确性。",
-    createdAt: "2025-08-12T14:20:00Z",
-    dueDate: "2025-08-14T17:00:00Z",
-    priority: 4,
-    status: "in_progress",
-    type: "relationship_review",
-  },
-  {
-    id: "t3",
-    title: "事件验证 - 融资事件核实",
-    description:
-      "核实蓝海科技最新一轮融资信息，包括融资金额、投资方和融资时间。",
-    createdAt: "2025-08-13T09:15:00Z",
-    dueDate: "2025-08-17T17:00:00Z",
-    priority: 2,
-    status: "pending",
-    type: "event_verification",
-  },
-];
-
-const mockEvents = [
-  {
-    id: "e1",
-    title: "星达科技完成C轮5亿元融资",
-    description:
-      "星达科技于8月5日宣布完成C轮5亿元融资，由红杉资本领投，老股东蓝湖资本、IDG资本跟投。",
-    enterpriseId: "ent1",
-    enterpriseName: "星达科技有限公司",
-    eventType: "financing" as "financing",
-    date: "2025-08-05T10:00:00Z",
-    importance: 85,
-    source: "企业公告",
-  },
-  {
-    id: "e2",
-    title: "远洋集团收购金海物流30%股权",
-    description:
-      "远洋集团宣布以6.8亿元收购金海物流30%股权，成为其第二大股东。",
-    enterpriseId: "ent2",
-    enterpriseName: "远洋集团",
-    eventType: "investment" as "investment",
-    date: "2025-08-08T14:30:00Z",
-    importance: 75,
-    source: "行业资讯",
-  },
-  {
-    id: "e3",
-    title: "蓝天电子涉及专利侵权诉讼",
-    description:
-      "蓝天电子被竞争对手提起专利侵权诉讼，涉案金额约2000万元。",
-    enterpriseId: "ent3",
-    enterpriseName: "蓝天电子科技有限公司",
-    eventType: "litigation" as "litigation",
-    date: "2025-08-10T09:45:00Z",
-    importance: 60,
-    source: "法院公告",
-  },
-];
-
-const mockProspects = [
-  {
-    id: "p1",
-    name: "未来科技有限公司",
-    industry: "信息技术",
-    registeredCapital: 50000000,
-    employeeCount: 128,
-    pcsScore: 92,
-    svsScore: 88,
-    desScore: 95,
-    nisScore: 90,
-    discoveryPath: "通过现有客户星达科技的供应链关系发现",
-  },
-  {
-    id: "p2",
-    name: "东方智能系统有限公司",
-    industry: "人工智能",
-    registeredCapital: 30000000,
-    employeeCount: 75,
-    pcsScore: 85,
-    svsScore: 82,
-    desScore: 78,
-    nisScore: 91,
-    discoveryPath: "通过远洋集团的投资关系发现",
-  },
-  {
-    id: "p3",
-    name: "绿源新能源科技有限公司",
-    industry: "新能源",
-    registeredCapital: 100000000,
-    employeeCount: 210,
-    pcsScore: 78,
-    svsScore: 85,
-    desScore: 72,
-    nisScore: 76,
-    discoveryPath: "通过行业关联性分析发现",
-  },
-];
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [tasks, setTasks] = useState<TaskType[]>(mockTasks);
+  
+  // State management for dashboard data
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [events, setEvents] = useState<Event[]>([]);
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [dashboardStats, setDashboardStats] = useState({
+    newProspects: 0,
+    pendingTasks: 0,
+    conversionRate: 0,
+    quarterlyRevenue: 0
+  });
+  
+  const [tasksLoading, setTasksLoading] = useState(true);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [prospectsLoading, setProspectsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   
   // 使用数据Hook获取Dashboard数据
   const { 
@@ -161,29 +56,143 @@ export default function HomePage() {
     clients, 
     dataSources, 
     isLoading, 
-    hasError, 
+    hasError: dashboardHasError, 
     refetchAll 
   } = useDashboardData();
-  const [events, setEvents] = useState(mockEvents);
+
+  // 加载任务数据
+  const loadTasks = async () => {
+    try {
+      setTasksLoading(true);
+      const response = await ApiService.Task.getTasks({ limit: 5 });
+      if (response.success && response.data) {
+        setTasks(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      setHasError(true);
+      setErrorMessage('加载任务数据失败');
+    } finally {
+      setTasksLoading(false);
+    }
+  };
+
+  // 加载事件数据
+  const loadEvents = async () => {
+    try {
+      setEventsLoading(true);
+      const response = await ApiService.Event.getEvents({ 
+        limit: 5, 
+        importance_min: 60 
+      });
+      if (response.success && response.data) {
+        setEvents(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load events:', error);
+    } finally {
+      setEventsLoading(false);
+    }
+  };
+
+  // 加载潜客数据
+  const loadProspects = async () => {
+    try {
+      setProspectsLoading(true);
+      const response = await ApiService.Prospect.getHighPriorityProspects(3);
+      if (response.success && response.data) {
+        setProspects(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load prospects:', error);
+    } finally {
+      setProspectsLoading(false);
+    }
+  };
+
+  // 加载统计数据
+  const loadStats = async () => {
+    try {
+      setStatsLoading(true);
+      
+      // 获取统计数据 - 这里可以并行获取多个API的数据
+      const [prospectsResponse, graphStatsResponse] = await Promise.all([
+        ApiService.Prospect.getProspects({ limit: 100 }).catch(() => ({ success: false, data: [] })),
+        ApiService.Graph.getGraphStats().catch(() => ({ success: false, data: null }))
+      ]);
+      
+      // 计算统计数据
+      const prospectsCount = prospectsResponse.success && 'pagination' in prospectsResponse && prospectsResponse.pagination 
+        ? prospectsResponse.pagination.total 
+        : 0;
+        
+      const pendingTasksCount = tasks.filter(t => t.status === 'pending').length;
+      
+      setDashboardStats({
+        newProspects: prospectsCount,
+        pendingTasks: pendingTasksCount,
+        conversionRate: 32.5, // 暂时使用默认值，后续可以从专门的统计API获取
+        quarterlyRevenue: 5.8   // 暂时使用默认值
+      });
+    } catch (error) {
+      console.error('Failed to load stats:', error);
+      // 设置默认值
+      setDashboardStats({
+        newProspects: 0,
+        pendingTasks: tasks.filter(t => t.status === 'pending').length,
+        conversionRate: 0,
+        quarterlyRevenue: 0
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  // 初始化数据加载
+  useEffect(() => {
+    loadTasks();
+    loadEvents();
+    loadProspects();
+    loadStats();
+  }, []);
+
+  // 更新统计数据中的任务数
+  useEffect(() => {
+    if (tasks.length > 0) {
+      setDashboardStats(prev => ({
+        ...prev,
+        pendingTasks: tasks.filter(t => t.status === 'pending').length
+      }));
+    }
+  }, [tasks]);
 
   // Handler for task actions
-  const handleTaskAction = (id: string, action: "start" | "complete" | "reject") => {
-    setTasks(
-      tasks.map((task) => {
-        if (task.id === id) {
-          return {
-            ...task,
-            status:
-              action === "start"
-                ? "in_progress"
-                : action === "complete"
-                ? "completed"
-                : "rejected",
-          };
-        }
-        return task;
-      })
-    );
+  const handleTaskAction = async (id: string, action: "start" | "complete" | "reject") => {
+    try {
+      const newStatus = action === "start" 
+        ? "in_progress" 
+        : action === "complete" 
+        ? "completed" 
+        : "cancelled";
+        
+      await ApiService.Task.updateTask(id, { status: newStatus });
+      
+      setTasks(
+        tasks.map((task) => {
+          if (task.id === id) {
+            return {
+              ...task,
+              status: newStatus as any,
+            };
+          }
+          return task;
+        })
+      );
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      setHasError(true);
+      setErrorMessage('更新任务状态失败');
+    }
   };
 
   // Handler for event actions
@@ -194,7 +203,7 @@ export default function HomePage() {
       // Navigate to enterprise detail view
       const event = events.find((e) => e.id === id);
       if (event) {
-        navigate(`/enterprise/${event.enterpriseId}`);
+        navigate(`/enterprise/${event.enterpriseId || event.id}`);
       }
     }
   };
@@ -218,25 +227,25 @@ export default function HomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="本月新增潜客"
-            value="48"
+            value={statsLoading ? "-" : dashboardStats.newProspects.toString()}
             icon={<Target className="h-5 w-5" />}
             trend={{ value: 12, label: "较上月", isPositive: true }}
           />
           <StatCard
             title="待处理任务"
-            value="16"
+            value={tasksLoading ? "-" : dashboardStats.pendingTasks.toString()}
             icon={<Clock className="h-5 w-5" />}
             trend={{ value: 5, label: "较昨日", isPositive: false }}
           />
           <StatCard
             title="潜客转化率"
-            value="32.5%"
+            value={statsLoading ? "-" : `${dashboardStats.conversionRate}%`}
             icon={<TrendingUp className="h-5 w-5" />}
             trend={{ value: 4.2, label: "较上季度", isPositive: true }}
           />
           <StatCard
             title="本季贡献收入"
-            value="5.8亿"
+            value={statsLoading ? "-" : `${dashboardStats.quarterlyRevenue}亿`}
             icon={<Briefcase className="h-5 w-5" />}
             trend={{ value: 15, label: "较上季度", isPositive: true }}
           />
@@ -258,13 +267,37 @@ export default function HomePage() {
               </Button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {mockProspects.map((prospect) => (
-                <ProspectCard
-                  key={prospect.id}
-                  {...prospect}
-                  onSelect={handleProspectSelect}
-                />
-              ))}
+              {prospectsLoading ? (
+                // Loading skeletons
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="space-y-3">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                ))
+              ) : prospects.length > 0 ? (
+                                 prospects.slice(0, 3).map((prospect) => (
+                   <ProspectCard
+                     key={prospect.id}
+                     id={prospect.id}
+                     name={prospect.name}
+                     industry={prospect.industry}
+                     registeredCapital={prospect.registeredCapital}
+                     employeeCount={prospect.employeeCount}
+                     pcsScore={prospect.pcs}
+                     svsScore={prospect.svs}
+                     desScore={prospect.des}
+                     nisScore={prospect.nis}
+                     discoveryPath={prospect.discoveryPath}
+                     onSelect={handleProspectSelect}
+                   />
+                 ))
+              ) : (
+                <div className="col-span-2 text-center py-8 text-muted-foreground">
+                  暂无高优先级潜客数据
+                </div>
+              )}
             </div>
           </div>
 

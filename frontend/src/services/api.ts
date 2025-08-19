@@ -15,7 +15,10 @@ import {
   AnalyticsReport,
   DatabaseEntity,
   EntityType,
-  OperationLog
+  OperationLog,
+  Task,
+  Event,
+  Prospect
 } from '@/types/database';
 
 // API配置
@@ -612,6 +615,191 @@ export class DataService {
   }
 }
 
+// 任务管理服务
+export class TaskService {
+  // 获取任务列表
+  static async getTasks(params?: {
+    page?: number;
+    limit?: number;
+    status?: string;
+    priority?: string;
+    assigned_to?: string;
+  }): Promise<PaginatedResponse<Task>> {
+    return await httpClient.get<PaginatedResponse<Task>>('/tasks', params);
+  }
+
+  // 获取单个任务
+  static async getTask(id: string): Promise<ApiResponse<Task>> {
+    return await httpClient.get<ApiResponse<Task>>(`/tasks/${id}`);
+  }
+
+  // 创建任务
+  static async createTask(task: {
+    title: string;
+    description?: string;
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+    assigned_to?: string;
+    due_date?: string;
+    tags?: string[];
+  }): Promise<ApiResponse<Task>> {
+    return await httpClient.post<ApiResponse<Task>>('/tasks', task);
+  }
+
+  // 更新任务
+  static async updateTask(id: string, updates: {
+    title?: string;
+    description?: string;
+    priority?: 'low' | 'medium' | 'high' | 'critical';
+    status?: 'pending' | 'in_progress' | 'completed' | 'cancelled';
+    assigned_to?: string;
+    due_date?: string;
+    tags?: string[];
+  }): Promise<ApiResponse<Task>> {
+    return await httpClient.put<ApiResponse<Task>>(`/tasks/${id}`, updates);
+  }
+
+  // 删除任务
+  static async deleteTask(id: string): Promise<ApiResponse<Task>> {
+    return await httpClient.delete<ApiResponse<Task>>(`/tasks/${id}`);
+  }
+
+  // 批量更新任务状态
+  static async batchUpdateStatus(taskIds: string[], status: string): Promise<ApiResponse<Task[]>> {
+    return await httpClient.patch<ApiResponse<Task[]>>('/tasks/batch/status', {
+      task_ids: taskIds,
+      status
+    });
+  }
+}
+
+// 事件管理服务
+export class EventService {
+  // 获取事件列表
+  static async getEvents(params?: {
+    page?: number;
+    limit?: number;
+    event_type?: string;
+    importance_min?: number;
+    enterprise_id?: string;
+  }): Promise<PaginatedResponse<Event>> {
+    return await httpClient.get<PaginatedResponse<Event>>('/events', params);
+  }
+
+  // 获取单个事件
+  static async getEvent(id: string): Promise<ApiResponse<Event>> {
+    return await httpClient.get<ApiResponse<Event>>(`/events/${id}`);
+  }
+
+  // 创建事件
+  static async createEvent(event: {
+    title: string;
+    description?: string;
+    event_type: string;
+    enterprise_id: string;
+    date?: string;
+    importance?: number;
+    source?: string;
+    metadata?: any;
+  }): Promise<ApiResponse<Event>> {
+    return await httpClient.post<ApiResponse<Event>>('/events', event);
+  }
+
+  // 更新事件
+  static async updateEvent(id: string, updates: {
+    title?: string;
+    description?: string;
+    event_type?: string;
+    enterprise_id?: string;
+    date?: string;
+    importance?: number;
+    source?: string;
+    metadata?: any;
+  }): Promise<ApiResponse<Event>> {
+    return await httpClient.put<ApiResponse<Event>>(`/events/${id}`, updates);
+  }
+
+  // 删除事件
+  static async deleteEvent(id: string): Promise<ApiResponse<Event>> {
+    return await httpClient.delete<ApiResponse<Event>>(`/events/${id}`);
+  }
+}
+
+// 潜客管理服务
+export class ProspectService {
+  // 获取潜客列表
+  static async getProspects(params?: {
+    page?: number;
+    limit?: number;
+    industry?: string;
+    score_min?: number;
+    status?: string;
+    priority?: string;
+  }): Promise<PaginatedResponse<Prospect>> {
+    return await httpClient.get<PaginatedResponse<Prospect>>('/prospects', params);
+  }
+
+  // 获取高优先级潜客
+  static async getHighPriorityProspects(limit = 5): Promise<ApiResponse<Prospect[]>> {
+    return await httpClient.get<ApiResponse<Prospect[]>>('/prospects/high-priority', { limit });
+  }
+
+  // 获取单个潜客
+  static async getProspect(id: string): Promise<ApiResponse<Prospect>> {
+    return await httpClient.get<ApiResponse<Prospect>>(`/prospects/${id}`);
+  }
+
+  // 创建潜客
+  static async createProspect(prospect: {
+    name: string;
+    industry: string;
+    registeredCapital?: number;
+    employeeCount?: number;
+    svs?: number;
+    des?: number;
+    nis?: number;
+    pcs?: number;
+    discoveryPath?: string;
+    priority?: 'low' | 'medium' | 'high';
+    status?: string;
+    contactInfo?: any;
+    notes?: string;
+  }): Promise<ApiResponse<Prospect>> {
+    return await httpClient.post<ApiResponse<Prospect>>('/prospects', prospect);
+  }
+
+  // 更新潜客
+  static async updateProspect(id: string, updates: {
+    name?: string;
+    industry?: string;
+    registeredCapital?: number;
+    employeeCount?: number;
+    svs?: number;
+    des?: number;
+    nis?: number;
+    pcs?: number;
+    discoveryPath?: string;
+    priority?: 'low' | 'medium' | 'high';
+    status?: string;
+    contactInfo?: any;
+    notes?: string;
+  }): Promise<ApiResponse<Prospect>> {
+    return await httpClient.put<ApiResponse<Prospect>>(`/prospects/${id}`, updates);
+  }
+
+  // 删除潜客
+  static async deleteProspect(id: string): Promise<ApiResponse<Prospect>> {
+    return await httpClient.delete<ApiResponse<Prospect>>(`/prospects/${id}`);
+  }
+
+  // 批量更新潜客状态
+  static async batchUpdateStatus(prospectIds: string[], status: string): Promise<ApiResponse<Prospect[]>> {
+    return await httpClient.patch<ApiResponse<Prospect[]>>('/prospects/batch/status', {
+      prospect_ids: prospectIds,
+      status
+    });
+  }
+}
+
 // 设置认证token
 export function setAuthToken(token: string) {
   httpClient.setAuthToken(token);
@@ -640,6 +828,9 @@ export const ApiService = {
   SearchEnhanced: SearchServiceEnhanced,
   User: UserService,
   Data: DataService,
+  Task: TaskService,
+  Event: EventService,
+  Prospect: ProspectService,
   setAuthToken,
   removeAuthToken,
   clearCache,

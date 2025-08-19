@@ -453,3 +453,225 @@ export interface BusinessOperations {
   generateReport(type: string, parameters: Record<string, any>): Promise<ApiResponse<AnalyticsReport>>;
   getAnalytics(entityId: string, entityType: EntityType): Promise<ApiResponse<Record<string, any>>>;
 } 
+
+// 任务接口
+export interface Task {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'entity_review' | 'relationship_review' | 'event_verification' | 'data_verification';
+  status: 'pending' | 'in_progress' | 'completed' | 'rejected';
+  priority: number; // 1-5
+  assigneeId?: string;
+  entityId?: string;
+  entityType?: string;
+  dueDate?: Date | string;
+  metadata?: Record<string, any>;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  completedAt?: Date | string;
+}
+
+// 事件接口
+export interface Event {
+  id: string;
+  title: string;
+  description?: string;
+  eventType: 'financing' | 'investment' | 'litigation' | 'merger' | 'partnership' | 'regulation' | 'other';
+  enterpriseId?: string;
+  enterpriseName?: string;
+  date: Date | string;
+  importance: number; // 0-100
+  source?: string;
+  sourceUrl?: string;
+  metadata?: Record<string, any>;
+  isProcessed: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 潜客接口
+export interface Prospect {
+  id: string;
+  name: string;
+  industry?: string;
+  registeredCapital?: number;
+  employeeCount?: number;
+  svs: number;
+  des: number;
+  nis: number;
+  pcs: number;
+  discoveryPath?: string;
+  discoveryMethod?: string;
+  seedEnterpriseId?: string;
+  confidenceScore?: number;
+  status: 'discovered' | 'contacted' | 'interested' | 'converted' | 'rejected';
+  assignedTo?: string;
+  contactInfo?: Record<string, any>;
+  notes?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 风险因子接口
+export interface RiskFactor {
+  id: string;
+  enterpriseId: string;
+  name: string;
+  category: string;
+  level: 'none' | 'low' | 'medium' | 'high' | 'critical';
+  score: number; // 0-100
+  description?: string;
+  evidence?: string;
+  impactAssessment?: string;
+  mitigationStrategy?: string;
+  status: 'active' | 'monitoring' | 'resolved' | 'false_positive';
+  detectedAt: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 财务数据接口
+export interface FinancialData {
+  id: string;
+  enterpriseId: string;
+  year: number;
+  quarter?: number; // 1-4，null表示年度数据
+  revenue: number;
+  profit: number;
+  grossProfit: number;
+  operatingIncome: number;
+  totalAssets: number;
+  totalLiabilities: number;
+  shareholdersEquity: number;
+  cashFlow: number;
+  debtRatio?: number;
+  roe?: number; // 净资产收益率
+  roa?: number; // 总资产收益率
+  currentRatio?: number; // 流动比率
+  quickRatio?: number; // 速动比率
+  dataSource?: string;
+  isAudited: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 新闻接口
+export interface News {
+  id: string;
+  title: string;
+  content?: string;
+  summary?: string;
+  source?: string;
+  sourceUrl?: string;
+  publishedAt?: Date | string;
+  newsType?: 'business' | 'financing' | 'partnership' | 'legal' | 'regulation' | 'product' | 'other';
+  enterpriseId?: string;
+  personId?: string;
+  keywords?: string[];
+  sentiment?: 'positive' | 'neutral' | 'negative';
+  importance: number; // 0-100
+  isVerified: boolean;
+  metadata?: Record<string, any>;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 产品推荐接口
+export interface ProductRecommendation {
+  id: string;
+  enterpriseId: string;
+  productId?: string;
+  productName: string;
+  productType?: string;
+  description?: string;
+  matchScore: number; // 0-100
+  features?: string[];
+  benefits?: string[];
+  targetAmount?: number;
+  interestRateMin?: number;
+  interestRateMax?: number;
+  loanTermMonths?: number;
+  eligibilityCriteria?: string;
+  recommendationReason?: string;
+  priority: number; // 1-5
+  status: 'active' | 'inactive' | 'discontinued';
+  createdBy?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 营销策略接口
+export interface MarketingStrategy {
+  id: string;
+  enterpriseId: string;
+  title: string;
+  description?: string;
+  strategyType?: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  expectedOutcome?: string;
+  expectedRevenue?: number;
+  executionSteps?: string[];
+  requiredResources?: string[];
+  timelineWeeks?: number;
+  successMetrics?: string;
+  status: 'proposed' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
+  assignedTo?: string;
+  createdBy?: string;
+  approvedBy?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  startedAt?: Date | string;
+  completedAt?: Date | string;
+}
+
+// 关系路径接口
+export interface RelationshipPath {
+  id: string;
+  enterpriseId: string;
+  title: string;
+  pathType: string;
+  confidence: number; // 0-100
+  pathNodes: any; // JSON
+  pathEdges: any; // JSON
+  pathLength: number;
+  strengthScore: number;
+  businessValue?: string;
+  actionRecommendation?: string;
+  createdBy?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 用户设置接口
+export interface UserSettings {
+  id: string;
+  userId: string;
+  notificationEmail: boolean;
+  notificationBrowser: boolean;
+  notificationMobile: boolean;
+  notificationTypes?: Record<string, any>;
+  theme: 'light' | 'dark' | 'system';
+  language: string;
+  dateFormat: string;
+  timezone: string;
+  dashboardLayout?: Record<string, any>;
+  preferences?: Record<string, any>;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+// 登录历史接口
+export interface UserLoginHistory {
+  id: string;
+  userId: string;
+  loginTime: Date | string;
+  ipAddress?: string;
+  userAgent?: string;
+  deviceType?: string;
+  location?: string;
+  success: boolean;
+  failureReason?: string;
+  sessionDuration?: number;
+  logoutTime?: Date | string;
+} 
