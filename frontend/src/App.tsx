@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import HomePage from "@/pages/HomePage";
@@ -14,113 +14,95 @@ import NotFoundPage from "@/pages/NotFoundPage";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+// 路由配置
+const router = createBrowserRouter([
+  {
+    path: "/login",
+    element: <LoginPage />
+  },
+  {
+    path: "/",
+    element: (
+      <ProtectedRoute requiredPermission="view_dashboard">
+        <HomePage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/enterprise",
+    element: (
+      <ProtectedRoute requiredPermission="view_enterprise">
+        <EnterprisePage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/enterprise/:id",
+    element: (
+      <ProtectedRoute requiredPermission="view_enterprise">
+        <EnterprisePage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/graph",
+    element: (
+      <ProtectedRoute requiredPermission="view_graph">
+        <GraphPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/prospects",
+    element: (
+      <ProtectedRoute requiredPermission="view_prospects">
+        <ProspectsPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/search",
+    element: (
+      <ProtectedRoute requiredPermission="view_search">
+        <SearchPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/clients",
+    element: (
+      <ProtectedRoute requiredPermission="view_clients">
+        <ClientsPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/data",
+    element: (
+      <ProtectedRoute requiredPermission="manage_data">
+        <DataPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/settings",
+    element: (
+      <ProtectedRoute requiredPermission="view_dashboard">
+        <SettingsPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "*",
+    element: <NotFoundPage />
+  }
+]);
+
 function App() {
   return (
     <TooltipProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            {/* 公开路由 - 登录页面 */}
-            <Route path="/login" element={<LoginPage />} />
-            
-            {/* 受保护的路由 */}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute requiredPermission="view_dashboard">
-                  <HomePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/enterprise" 
-              element={
-                <ProtectedRoute requiredPermission="view_enterprise">
-                  <EnterprisePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/enterprise/:id" 
-              element={
-                <ProtectedRoute requiredPermission="view_enterprise">
-                  <EnterprisePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/graph" 
-              element={
-                <ProtectedRoute requiredPermission="view_graph">
-                  <GraphPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/prospects" 
-              element={
-                <ProtectedRoute requiredPermission="view_prospects">
-                  <ProspectsPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/prospects/:id" 
-              element={
-                <ProtectedRoute requiredPermission="view_enterprise">
-                  <EnterprisePage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/search" 
-              element={
-                <ProtectedRoute requiredPermission="view_search">
-                  <SearchPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/clients" 
-              element={
-                <ProtectedRoute requiredPermission="view_clients">
-                  <ClientsPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/data" 
-              element={
-                <ProtectedRoute 
-                  requiredPermission="manage_data"
-                  allowedRoles={['admin', 'manager']}
-                >
-                  <DataPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/settings" 
-              element={
-                <ProtectedRoute>
-                  <SettingsPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            {/* 404页面 */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </BrowserRouter>
+        <RouterProvider router={router} />
         <Toaster />
       </AuthProvider>
     </TooltipProvider>

@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { authenticate, requirePermission } from '../middleware/auth.js';
-import pool from '../config/database.js';
+import { authenticate, requirePermission } from '../middleware/auth';
+import pool from '../config/database';
 
 const router = express.Router();
 
@@ -44,7 +44,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
     const countResult = await pool.query('SELECT COUNT(*) FROM prospects WHERE 1=1');
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows,
       pagination: {
@@ -56,7 +56,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error fetching prospects:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取潜客列表失败'
     });
@@ -68,18 +68,23 @@ router.get('/high-priority', authenticate, async (req: Request, res: Response) =
   try {
     const { limit = '5' } = req.query;
     
+    // 根据综合评分获取高优先级潜客（评分>80分的）
     const result = await pool.query(
-      'SELECT * FROM prospects WHERE priority = $1 ORDER BY ((pcs + svs + des + nis) / 4) DESC LIMIT $2',
-      ['high', parseInt(limit as string)]
+      `SELECT *, ((pcs + svs + des + nis) / 4) as avg_score 
+       FROM prospects 
+       WHERE ((pcs + svs + des + nis) / 4) > 80 
+       ORDER BY ((pcs + svs + des + nis) / 4) DESC 
+       LIMIT $1`,
+      [parseInt(limit as string)]
     );
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows
     });
   } catch (error) {
     console.error('Error fetching high priority prospects:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取高优先级潜客失败'
     });
@@ -100,13 +105,13 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error fetching prospect:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取潜客详情失败'
     });
@@ -149,14 +154,14 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
        discoveryPath, priority, status, contactInfo, notes, created_by]
     );
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: result.rows[0],
       message: '潜客创建成功'
     });
   } catch (error) {
     console.error('Error creating prospect:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '创建潜客失败'
     });
@@ -193,14 +198,14 @@ router.put('/:id', authenticate, async (req: Request, res: Response) => {
        svs, des, nis, pcs, discoveryPath, priority, status, contactInfo, notes]
     );
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0],
       message: '潜客更新成功'
     });
   } catch (error) {
     console.error('Error updating prospect:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新潜客失败'
     });
@@ -221,14 +226,14 @@ router.delete('/:id', authenticate, requirePermission('manage_data'), async (req
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0],
       message: '潜客删除成功'
     });
   } catch (error) {
     console.error('Error deleting prospect:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '删除潜客失败'
     });
@@ -262,14 +267,14 @@ router.patch('/batch/status', authenticate, requirePermission('manage_data'), as
       [status, ...prospect_ids]
     );
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows,
       message: `成功更新 ${result.rows.length} 个潜客的状态`
     });
   } catch (error) {
     console.error('Error batch updating prospect status:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '批量更新潜客状态失败'
     });

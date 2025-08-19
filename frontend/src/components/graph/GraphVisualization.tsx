@@ -44,9 +44,21 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
 
     svg.call(zoom);
 
+    // 数据验证：过滤掉无效的链接（source或target节点不存在）
+    const nodeIds = new Set(data.nodes.map(node => node.id));
+    const validLinks = data.links.filter(link => {
+      const sourceId = typeof link.source === 'string' ? link.source : (link.source as any)?.id;
+      const targetId = typeof link.target === 'string' ? link.target : (link.target as any)?.id;
+      const isValid = nodeIds.has(sourceId) && nodeIds.has(targetId);
+      if (!isValid) {
+        console.warn(`Filtering out link with missing nodes: ${sourceId} -> ${targetId}`);
+      }
+      return isValid;
+    });
+
     // 创建力模拟
     const simulation = d3.forceSimulation<GraphNode>(data.nodes)
-      .force("link", d3.forceLink<GraphNode, GraphLink>(data.links)
+      .force("link", d3.forceLink<GraphNode, GraphLink>(validLinks)
         .id((d: any) => d.id)
         .distance(100))
       .force("charge", d3.forceManyBody().strength(-300))
@@ -57,7 +69,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
     const link = container.append("g")
       .attr("class", "links")
       .selectAll("line")
-      .data(data.links)
+      .data(validLinks)
       .enter().append("line")
       .attr("stroke", "#999")
       .attr("stroke-opacity", 0.6)

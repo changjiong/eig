@@ -28,8 +28,17 @@ export default function TaskItem({
   onAction,
 }: TaskItemProps) {
   // Format relative time using date-fns
-  const getRelativeTime = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), {
+  const getRelativeTime = (dateString: string | null | undefined) => {
+    if (!dateString) {
+      return '未设置';
+    }
+    
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return '日期无效';
+    }
+    
+    return formatDistanceToNow(date, {
       addSuffix: true,
       locale: zhCN,
     });

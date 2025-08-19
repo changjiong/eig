@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { authenticate, requirePermission } from '../middleware/auth.js';
-import pool from '../config/database.js';
+import { authenticate, requirePermission } from '../middleware/auth';
+import pool from '../config/database';
 
 const router = express.Router();
 
@@ -71,13 +71,13 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error fetching event:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取事件详情失败'
     });
@@ -97,8 +97,6 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
       source, 
       metadata 
     } = req.body;
-    const created_by = req.user?.id;
-    
     if (!title || !event_type || !enterprise_id) {
       return res.status(400).json({
         success: false,
@@ -106,21 +104,25 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
       });
     }
     
+    // 获取企业名称
+    const enterpriseResult = await pool.query('SELECT name FROM enterprises WHERE id = $1', [enterprise_id]);
+    const enterprise_name = enterpriseResult.rows[0]?.name || '';
+    
     const result = await pool.query(
-      `INSERT INTO events (title, description, event_type, enterprise_id, date, importance, source, metadata, created_by)
+      `INSERT INTO events (title, description, event_type, enterprise_id, enterprise_name, date, importance, source, metadata)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [title, description, event_type, enterprise_id, date, importance, source, metadata, created_by]
+      [title, description, event_type, enterprise_id, enterprise_name, date, importance, source, JSON.stringify(metadata || {})]
     );
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: result.rows[0],
       message: '事件创建成功'
     });
   } catch (error) {
     console.error('Error creating event:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '创建事件失败'
     });
@@ -142,23 +144,30 @@ router.put('/:id', authenticate, requirePermission('manage_data'), async (req: R
       });
     }
     
+    // 如果企业ID更改，获取新的企业名称
+    let enterprise_name = existingEvent.rows[0].enterprise_name;
+    if (enterprise_id && enterprise_id !== existingEvent.rows[0].enterprise_id) {
+      const enterpriseResult = await pool.query('SELECT name FROM enterprises WHERE id = $1', [enterprise_id]);
+      enterprise_name = enterpriseResult.rows[0]?.name || '';
+    }
+    
     const result = await pool.query(
       `UPDATE events 
        SET title = $2, description = $3, event_type = $4, enterprise_id = $5, 
-           date = $6, importance = $7, source = $8, metadata = $9, updated_at = NOW()
+           enterprise_name = $6, date = $7, importance = $8, source = $9, metadata = $10, updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [id, title, description, event_type, enterprise_id, date, importance, source, metadata]
+      [id, title, description, event_type, enterprise_id, enterprise_name, date, importance, source, JSON.stringify(metadata || {})]
     );
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0],
       message: '事件更新成功'
     });
   } catch (error) {
     console.error('Error updating event:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新事件失败'
     });
@@ -179,14 +188,14 @@ router.delete('/:id', authenticate, requirePermission('manage_data'), async (req
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0],
       message: '事件删除成功'
     });
   } catch (error) {
     console.error('Error deleting event:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '删除事件失败'
     });

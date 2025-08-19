@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
-import { authenticate, requirePermission } from '../middleware/auth.js';
-import pool from '../config/database.js';
+import { authenticate, requirePermission } from '../middleware/auth';
+import pool from '../config/database';
 
 const router = express.Router();
 
@@ -26,7 +26,7 @@ router.get('/', authenticate, async (req: Request, res: Response) => {
     }
 
     if (assigned_to) {
-      query += ` AND assigned_to = $${paramIndex}`;
+      query += ` AND assignee_id = $${paramIndex}`;
       params.push(assigned_to);
       paramIndex++;
     }
@@ -71,13 +71,13 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error fetching task:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '获取任务详情失败'
     });
@@ -87,8 +87,7 @@ router.get('/:id', authenticate, async (req: Request, res: Response) => {
 // 创建任务
 router.post('/', authenticate, requirePermission('manage_data'), async (req: Request, res: Response) => {
   try {
-    const { title, description, priority = 'medium', assigned_to, due_date, tags } = req.body;
-    const created_by = req.user?.id;
+    const { title, description, type = 'data_verification', priority = 3, assignee_id, due_date, metadata } = req.body;
     
     if (!title) {
       return res.status(400).json({
@@ -98,20 +97,20 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
     }
     
     const result = await pool.query(
-      `INSERT INTO tasks (title, description, priority, status, assigned_to, due_date, tags, created_by)
-       VALUES ($1, $2, $3, 'pending', $4, $5, $6, $7)
+      `INSERT INTO tasks (title, description, type, priority, status, assignee_id, due_date, metadata)
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7)
        RETURNING *`,
-      [title, description, priority, assigned_to, due_date, tags, created_by]
+      [title, description, type, priority, assignee_id, due_date, JSON.stringify(metadata || {})]
     );
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       data: result.rows[0],
       message: '任务创建成功'
     });
   } catch (error) {
     console.error('Error creating task:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '创建任务失败'
     });
@@ -122,7 +121,7 @@ router.post('/', authenticate, requirePermission('manage_data'), async (req: Req
 router.put('/:id', authenticate, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { title, description, priority, status, assigned_to, due_date, tags } = req.body;
+    const { title, description, type, priority, status, assignee_id, due_date, metadata } = req.body;
     
     // 检查任务是否存在
     const existingTask = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
@@ -135,21 +134,21 @@ router.put('/:id', authenticate, async (req: Request, res: Response) => {
     
     const result = await pool.query(
       `UPDATE tasks 
-       SET title = $2, description = $3, priority = $4, status = $5, 
-           assigned_to = $6, due_date = $7, tags = $8, updated_at = NOW()
+       SET title = $2, description = $3, type = $4, priority = $5, status = $6, 
+           assignee_id = $7, due_date = $8, metadata = $9, updated_at = NOW()
        WHERE id = $1
        RETURNING *`,
-      [id, title, description, priority, status, assigned_to, due_date, tags]
+      [id, title, description, type, priority, status, assignee_id, due_date, JSON.stringify(metadata || {})]
     );
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0],
       message: '任务更新成功'
     });
   } catch (error) {
     console.error('Error updating task:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新任务失败'
     });
@@ -170,14 +169,14 @@ router.delete('/:id', authenticate, requirePermission('manage_data'), async (req
       });
     }
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows[0],
       message: '任务删除成功'
     });
   } catch (error) {
     console.error('Error deleting task:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '删除任务失败'
     });
@@ -211,14 +210,14 @@ router.patch('/batch/status', authenticate, requirePermission('manage_data'), as
       [status, ...task_ids]
     );
     
-    res.json({
+    return res.json({
       success: true,
       data: result.rows,
       message: `成功更新 ${result.rows.length} 个任务的状态`
     });
   } catch (error) {
     console.error('Error batch updating task status:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '批量更新任务状态失败'
     });
