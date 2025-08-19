@@ -1,6 +1,29 @@
 import { Pool } from 'pg';
 import pool from '../config/database';
-import { RiskFactor, RiskWarning, Enterprise, RelationshipType } from '../types/database';
+import { Enterprise, Relationship } from '../types/database';
+
+// 本地类型定义
+export interface RiskFactor {
+  id: string;
+  category: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  score: number;
+  description: string;
+  identifiedAt: Date;
+  status: 'active' | 'monitoring' | 'resolved' | 'false_positive';
+}
+
+export interface RiskWarning {
+  id: string;
+  enterpriseId: string;
+  severity: 'info' | 'warning' | 'critical';
+  message: string;
+  createdAt: Date;
+  isRead: boolean;
+}
+
+type RelationshipType = Relationship['relationshipType'];
 
 export interface RiskAssessment {
   enterpriseId: string;
@@ -349,7 +372,12 @@ class RiskAssessmentService {
         LIMIT 3
       `, [enterpriseId]);
       
-      const indicators = [];
+      const indicators: Array<{
+        name: string;
+        value: number;
+        threshold: number;
+        status: 'normal' | 'warning' | 'critical';
+      }> = [];
       let totalScore = 0;
       
       if (financialResult.rows.length > 0) {
@@ -511,18 +539,21 @@ class RiskAssessmentService {
     // 检查新的严重风险因子
     const criticalFactors = riskFactors.filter(factor => factor.severity === 'critical');
     if (criticalFactors.length > 0) {
-      const message = `发现${criticalFactors.length}个严重风险因子，需要紧急处理`;
-      
-      try {
-        await this.createRiskWarning(
-          enterpriseId,
-          'new_risk',
-          'critical',
-          message,
-          criticalFactors[0].id
-        );
-      } catch (error) {
-        console.error('Failed to create critical risk warning:', error);
+      const firstCriticalFactor = criticalFactors[0];
+      if (firstCriticalFactor) {
+        const message = `发现${criticalFactors.length}个严重风险因子，需要紧急处理`;
+        
+        try {
+          await this.createRiskWarning(
+            enterpriseId,
+            'new_risk',
+            'critical',
+            message,
+            firstCriticalFactor.id
+          );
+        } catch (error) {
+          console.error('Failed to create critical risk warning:', error);
+        }
       }
     }
   }

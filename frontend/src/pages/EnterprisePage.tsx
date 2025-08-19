@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import GraphVisualization from "@/components/graph/GraphVisualization";
 import EnterpriseDataTable from "@/components/enterprise/EnterpriseDataTable";
@@ -8,6 +8,7 @@ import MarketingRecommendations from "@/components/enterprise/MarketingRecommend
 import EnterpriseSummaryCard from "@/components/enterprise/EnterpriseSummaryCard";
 import ScoreCard from "@/components/enterprise/ScoreCard";
 import RelationshipPath from "@/components/enterprise/RelationshipPath";
+import EnterpriseSelectionList from "@/components/enterprise/EnterpriseSelectionList";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -20,6 +21,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { 
+  Breadcrumb, 
+  BreadcrumbItem, 
+  BreadcrumbLink, 
+  BreadcrumbList, 
+  BreadcrumbPage, 
+  BreadcrumbSeparator 
+} from "@/components/ui/breadcrumb";
 import {
   Building2,
   FileText,
@@ -28,6 +37,7 @@ import {
   AlertCircle,
   Globe,
   RefreshCw,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiService } from "@/services/api";
@@ -53,13 +63,14 @@ interface MockFinancialData {
 
 export default function EnterprisePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
   
   // API数据状态
   const [enterprise, setEnterprise] = useState<Enterprise | null>(null);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [graphStats, setGraphStats] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!!id); // 只在有id时才显示loading
   const [isCalculatingScore, setIsCalculatingScore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -190,7 +201,7 @@ export default function EnterprisePage() {
   // 获取企业详情
   const fetchEnterpriseDetails = async () => {
     if (!id) {
-      setError("缺少企业ID参数");
+      // 没有ID时，不需要加载企业详情，直接显示企业选择列表
       setIsLoading(false);
       return;
     }
@@ -256,6 +267,17 @@ export default function EnterprisePage() {
     }
   };
 
+  // 初始化loading状态
+  useEffect(() => {
+    setIsLoading(!!id);
+    setError(null);
+    if (id) {
+      setEnterprise(null);
+      setGraphData(null);
+      setGraphStats(null);
+    }
+  }, [id]);
+
   // 初始化数据加载
   useEffect(() => {
     fetchEnterpriseDetails();
@@ -285,8 +307,8 @@ export default function EnterprisePage() {
     { label: "行业关联度", value: (enterprise.nis * 0.95) || 0 },
   ] : [];
 
-  // Loading状态
-  if (isLoading) {
+  // Loading状态 - 只在有ID时才显示loading
+  if (isLoading && id) {
     return (
       <MainLayout>
         <div className="space-y-6">
@@ -322,6 +344,17 @@ export default function EnterprisePage() {
     );
   }
 
+  // 没有企业ID时显示企业选择列表
+  if (!id) {
+    return (
+      <MainLayout>
+        <div className="space-y-6">
+          <EnterpriseSelectionList />
+        </div>
+      </MainLayout>
+    );
+  }
+
   // 企业不存在
   if (!enterprise) {
     return (
@@ -341,12 +374,42 @@ export default function EnterprisePage() {
   return (
     <MainLayout>
       <div className="space-y-6">
+        {/* 面包屑导航 */}
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink 
+                onClick={() => navigate('/enterprise')}
+                className="cursor-pointer hover:text-foreground"
+              >
+                企业管理
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{enterprise?.name || "企业详情"}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">企业360°视图</h1>
-            <p className="text-muted-foreground mt-1">
-              全方位了解企业信息、关系网络和价值评分
-            </p>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate('/enterprise')}
+              className="flex items-center gap-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              返回企业列表
+            </Button>
+            <Separator orientation="vertical" className="h-6" />
+            <div>
+              <h1 className="text-2xl font-bold">企业360°视图</h1>
+              <p className="text-muted-foreground mt-1">
+                全方位了解企业信息、关系网络和价值评分
+              </p>
+            </div>
           </div>
           <Button 
             onClick={handleCalculateScore}

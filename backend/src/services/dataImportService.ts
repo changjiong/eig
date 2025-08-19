@@ -103,6 +103,11 @@ export class DataImportService {
       
       const workbook = XLSX.readFile(filePath);
       const sheetName = options.sheetName || workbook.SheetNames[0];
+      
+      if (!sheetName) {
+        throw new Error('未找到可用的工作表');
+      }
+      
       const worksheet = workbook.Sheets[sheetName];
       
       if (!worksheet) {
@@ -146,12 +151,18 @@ export class DataImportService {
       return line.split(',').map(cell => cell.trim().replace(/^"(.*)"$/, '$1'));
     };
     
+    // 确保至少有一行数据
+    const firstLine = lines[0];
+    if (!firstLine) {
+      return [];
+    }
+    
     if (options.hasHeader) {
-      headers = parseCSVLine(lines[0]);
+      headers = parseCSVLine(firstLine);
       lines.shift(); // 移除头部
     } else {
       // 生成默认列名
-      const firstRowLength = parseCSVLine(lines[0]).length;
+      const firstRowLength = parseCSVLine(firstLine).length;
       headers = Array.from({ length: firstRowLength }, (_, i) => `Column_${i + 1}`);
     }
     

@@ -7,16 +7,24 @@ import DataImportService from '../services/dataImportService';
 
 const router = express.Router();
 
+// 扩展Request接口以支持multer文件上传
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
+
+// 定义数据行类型
+type DataRow = { [key: string]: any };
+
 // 配置文件上传
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
+  destination: (req: Request, file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) => {
     const uploadDir = path.join(__dirname, '../../uploads');
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => {
+  filename: (req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) => {
     // 使用时间戳和随机字符串生成唯一文件名
     const timestamp = Date.now();
     const randomStr = Math.random().toString(36).substring(2, 15);
@@ -30,7 +38,7 @@ const upload = multer({
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB限制
   },
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
     const allowedTypes = ['.xlsx', '.xls', '.csv'];
     const ext = path.extname(file.originalname).toLowerCase();
     
@@ -43,7 +51,7 @@ const upload = multer({
 });
 
 // 上传文件并解析预览
-router.post('/upload', authenticate, requirePermission('manage_data'), upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload', authenticate, requirePermission('manage_data'), upload.single('file'), async (req: MulterRequest, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -68,9 +76,9 @@ router.post('/upload', authenticate, requirePermission('manage_data'), upload.si
       const previewData = data.slice(0, 10);
       
       // 分析列信息
-      const columns = previewData.length > 0 ? Object.keys(previewData[0]) : [];
+      const columns = previewData.length > 0 ? Object.keys(previewData[0] as DataRow) : [];
       const columnStats = columns.map(col => {
-        const values = previewData.map(row => row[col]).filter(val => val !== null && val !== undefined && val !== '');
+        const values = previewData.map(row => (row as DataRow)[col]).filter(val => val !== null && val !== undefined && val !== '');
         return {
           name: col,
           type: inferColumnType(values),
@@ -198,9 +206,17 @@ router.post('/start', authenticate, requirePermission('manage_data'), async (req
 });
 
 // 获取导入任务状态
-router.get('/status/:jobId', authenticate, requirePermission('view_data'), async (req: Request, res: Response) => {
+router.get('/status/:jobId', authenticate, requirePermission('manage_data'), async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
+    if (!jobId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少jobId参数',
+        timestamp: new Date().toISOString()
+      });
+    }
+
     const job = DataImportService.getImportJob(jobId);
 
     if (!job) {
@@ -228,7 +244,7 @@ router.get('/status/:jobId', authenticate, requirePermission('view_data'), async
 });
 
 // 获取所有导入任务
-router.get('/jobs', authenticate, requirePermission('view_data'), async (req: Request, res: Response) => {
+router.get('/jobs', authenticate, requirePermission('manage_data'), async (req: Request, res: Response) => {
   try {
     const jobs = DataImportService.getAllImportJobs();
     
@@ -275,7 +291,7 @@ router.delete('/cleanup', authenticate, requirePermission('manage_data'), async 
 });
 
 // 获取导入模板
-router.get('/template/:type', authenticate, requirePermission('view_data'), async (req: Request, res: Response) => {
+router.get('/template/:type', authenticate, requirePermission('manage_data'), async (req: Request, res: Response) => {
   try {
     const { type } = req.params;
     
@@ -331,7 +347,7 @@ router.get('/template/:type', authenticate, requirePermission('view_data'), asyn
 
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.send(csvContent);
+    return res.send(csvContent);
 
   } catch (error) {
     console.error('Get template error:', error);
