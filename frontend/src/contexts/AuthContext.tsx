@@ -19,7 +19,7 @@ export type Permission =
 
 // 用户信息接口
 export interface User {
-  id: string;
+  id?: string;
   name: string;
   email: string;
   department: string;
@@ -44,95 +44,35 @@ export interface AuthContextType extends AuthState {
   hasAnyRole: (roles: UserRole[]) => boolean;
 }
 
-// 角色权限映射
-const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
-  admin: [
-    'view_dashboard',
-    'view_enterprise',
-    'view_graph',
-    'view_prospects',
-    'view_search',
-    'view_clients',
-    'manage_data',
-    'manage_system',
-    'export_data',
-    'import_data',
-    'user_management'
-  ],
-  manager: [
-    'view_dashboard',
-    'view_enterprise',
-    'view_graph',
-    'view_prospects',
-    'view_search',
-    'view_clients',
-    'manage_data',
-    'export_data',
-    'import_data'
-  ],
-  analyst: [
-    'view_dashboard',
-    'view_enterprise',
-    'view_graph',
-    'view_prospects',
-    'view_search',
-    'view_clients',
-    'export_data'
-  ],
-  viewer: [
-    'view_dashboard',
-    'view_enterprise',
-    'view_graph',
-    'view_prospects',
-    'view_search'
-  ]
-};
+// API基础配置
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api/v1';
 
-// 模拟用户数据
-const MOCK_USERS: Record<string, { password: string; userData: User }> = {
-  'admin@bank.com': {
-    password: 'admin123',
-    userData: {
-      id: '1',
-      name: '系统管理员',
-      email: 'admin@bank.com',
-      department: '信息技术部',
-      role: 'admin',
-      permissions: ROLE_PERMISSIONS.admin
+// API调用函数
+const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const token = localStorage.getItem('eig_token');
+  
+  const config: RequestInit = {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers,
+    },
+  };
+
+  try {
+    const response = await fetch(url, config);
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
     }
-  },
-  'manager@bank.com': {
-    password: 'manager123',
-    userData: {
-      id: '2',
-      name: '部门经理',
-      email: 'manager@bank.com',
-      department: '企业金融部',
-      role: 'manager',
-      permissions: ROLE_PERMISSIONS.manager
-    }
-  },
-  'analyst@bank.com': {
-    password: 'analyst123',
-    userData: {
-      id: '3',
-      name: '数据分析师',
-      email: 'analyst@bank.com',
-      department: '风险管理部',
-      role: 'analyst',
-      permissions: ROLE_PERMISSIONS.analyst
-    }
-  },
-  'viewer@bank.com': {
-    password: 'viewer123',
-    userData: {
-      id: '4',
-      name: '客户经理',
-      email: 'viewer@bank.com',
-      department: '营业部',
-      role: 'viewer',
-      permissions: ROLE_PERMISSIONS.viewer
-    }
+    
+    return data;
+  } catch (error) {
+    console.error(`API调用失败: ${endpoint}`, error);
+    throw error;
   }
 };
 
@@ -147,26 +87,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading: true
   });
 
+  // 验证当前token并获取用户信息
+  const verifyToken = async (): Promise<User | null> => {
+    try {
+      const response = await apiCall('/auth/me');
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return null;
+    } catch (error) {
+      console.error('Token验证失败:', error);
+      // 清除无效的token
+      localStorage.removeItem('eig_token');
+      localStorage.removeItem('eig_user');
+      return null;
+    }
+  };
+
   // 初始化认证状态
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const storedUser = localStorage.getItem('eig_user');
         const storedToken = localStorage.getItem('eig_token');
         
-        if (storedUser && storedToken) {
-          const user = JSON.parse(storedUser) as User;
-          setAuthState({
-            user,
-            isAuthenticated: true,
-            isLoading: false
-          });
-        } else {
-          setAuthState(prev => ({
-            ...prev,
-            isLoading: false
-          }));
+        if (storedToken) {
+          const user = await verifyToken();
+          if (user) {
+            setAuthState({
+              user,
+              isAuthenticated: true,
+              isLoading: false
+            });
+            return;
+          }
         }
+        
+        setAuthState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false
+        });
       } catch (error) {
         console.error('初始化认证状态失败:', error);
         setAuthState({
@@ -183,43 +143,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // 登录函数
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const userCredentials = MOCK_USERS[email];
+      setAuthState(prev => ({ ...prev, isLoading: true }));
       
-      if (!userCredentials || userCredentials.password !== password) {
-        return false;
-      }
-
-      const { userData } = userCredentials;
-      
-      // 生成模拟token
-      const token = `mock_token_${Date.now()}_${userData.id}`;
-      
-      // 存储到localStorage
-      localStorage.setItem('eig_user', JSON.stringify(userData));
-      localStorage.setItem('eig_token', token);
-      
-      // 更新状态
-      setAuthState({
-        user: userData,
-        isAuthenticated: true,
-        isLoading: false
+      const response = await apiCall('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
       });
 
-      return true;
+      if (response.success && response.data) {
+        const { user, token } = response.data;
+        
+        // 存储token和用户信息
+        localStorage.setItem('eig_token', token);
+        localStorage.setItem('eig_user', JSON.stringify(user));
+        
+        // 更新状态
+        setAuthState({
+          user: user,
+          isAuthenticated: true,
+          isLoading: false
+        });
+
+        return true;
+      }
+      
+      setAuthState(prev => ({ ...prev, isLoading: false }));
+      return false;
     } catch (error) {
       console.error('登录失败:', error);
+      setAuthState(prev => ({ ...prev, isLoading: false }));
       return false;
     }
   };
 
   // 登出函数
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // 调用后端登出API（可选）
+      await apiCall('/auth/logout', { method: 'POST' });
+    } catch (error) {
+      console.error('登出API调用失败:', error);
+      // 即使API调用失败，也要清除本地状态
+    }
+    
+    // 清除本地存储
     localStorage.removeItem('eig_user');
     localStorage.removeItem('eig_token');
     
+    // 更新状态
     setAuthState({
       user: null,
       isAuthenticated: false,

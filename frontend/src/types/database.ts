@@ -16,98 +16,134 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
   };
 }
 
-// 企业数据类型
+// 企业数据类型 - 与后端保持一致
 export interface Enterprise {
   id: string;
   name: string;
-  creditCode: string; // 统一社会信用代码
-  registrationAddress: string;
-  establishmentDate: string;
-  registeredCapital: number;
-  industry: string;
-  businessScope: string;
-  employeeCount?: number;
-  contactPhone?: string;
+  legalName?: string;
+  creditCode?: string;
+  registrationNumber?: string;
+  industry?: string;
+  establishDate?: Date | string;
+  registeredCapital?: number;
+  businessScope?: string;
   legalRepresentative?: string;
-  businessStatus: 'active' | 'inactive' | 'cancelled' | 'suspended';
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  status: 'active' | 'inactive' | 'dissolved';
+  riskLevel: 'low' | 'medium' | 'high';
   
-  // 评分系统
-  svsScore?: number; // Supply chain Vulnerability Score
-  desScore?: number; // Digital Economy Score  
-  nisScore?: number; // Network Influence Score
-  pcsScore?: number; // Partner Compatibility Score
+  // 评分系统 - 与后端字段名保持一致
+  svs?: number; // 供应商价值评分
+  des?: number; // 需求企业评分
+  nis?: number; // 网络影响评分
+  pcs?: number; // 合作潜力评分
   
-  // 分类标签
-  isClient: boolean;
-  isProspect: boolean;
+  // 关系统计
+  supplierCount?: number;
+  customerCount?: number;
+  partnerCount?: number;
+  
+  // 前端特有的分类标签（可选）
+  isClient?: boolean;
+  isProspect?: boolean;
   clientLevel?: 'A' | 'B' | 'C' | 'D';
-  riskLevel?: 'low' | 'medium' | 'high' | 'critical';
   
   // 时间戳
-  createdAt: string;
-  updatedAt: string;
-  lastContactDate?: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  lastContactDate?: Date | string;
+  
+  // 兼容性字段（向后兼容）
+  registrationAddress?: string;
+  establishmentDate?: string;
+  employeeCount?: number;
+  contactPhone?: string;
+  businessStatus?: 'active' | 'inactive' | 'cancelled' | 'suspended';
+  svsScore?: number;
+  desScore?: number;
+  nisScore?: number;
+  pcsScore?: number;
 }
 
-// 关系数据类型
+// 关系数据类型 - 与后端保持一致
 export interface Relationship {
   id: string;
-  sourceId: string;
-  targetId: string;
-  sourceType: 'enterprise' | 'person' | 'product';
-  targetType: 'enterprise' | 'person' | 'product';
-  relationshipType: 'investment' | 'guarantee' | 'supply' | 'risk' | 'other';
+  fromId: string;
+  fromType: 'enterprise' | 'person' | 'product';
+  toId: string;
+  toType: 'enterprise' | 'person' | 'product';
+  relationshipType: 'investment' | 'guarantee' | 'supply' | 'risk' | 'employment' | 'partnership' | 'ownership' | 'other';
   
   // 关系详情
-  description?: string;
   strength: number; // 关系强度 0-1
-  confidence: number; // 可信度 0-1
-  startDate?: string;
-  endDate?: string;
+  isDirectional?: boolean;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  description?: string;
+  metadata?: Record<string, any>;
   
-  // 元数据
-  dataSource: string;
-  verificationStatus: 'verified' | 'pending' | 'disputed';
-  createdAt: string;
-  updatedAt: string;
+  // 时间戳
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  
+  // 兼容性字段（向后兼容）
+  sourceId?: string;
+  targetId?: string;
+  sourceType?: 'enterprise' | 'person' | 'product';
+  targetType?: 'enterprise' | 'person' | 'product';
+  confidence?: number;
+  dataSource?: string;
+  verificationStatus?: 'verified' | 'pending' | 'disputed';
 }
 
-// 个人数据类型
+// 个人数据类型 - 与后端保持一致
 export interface Person {
   id: string;
   name: string;
-  idNumber?: string; // 身份证号（加密）
+  gender?: 'male' | 'female';
+  birthDate?: Date | string;
+  education?: string;
+  position?: string;
+  company?: string;
+  companyId?: string;
   phone?: string;
   email?: string;
-  position?: string;
+  linkedinUrl?: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  createdAt: Date | string;
+  updatedAt: Date | string;
   
-  // 关联信息
-  enterprises: string[]; // 关联企业ID列表
-  
-  // 时间戳
-  createdAt: string;
-  updatedAt: string;
+  // 兼容性字段（向后兼容）
+  idNumber?: string;
+  enterprises?: string[];
 }
 
-// 产品数据类型
+// 产品数据类型 - 与后端保持一致
 export interface Product {
   id: string;
   name: string;
-  type: 'loan' | 'credit' | 'investment' | 'insurance' | 'other';
+  category?: string;
   description?: string;
+  manufacturer?: string;
+  manufacturerId?: string;
+  price?: number;
+  currency?: string;
+  specifications?: Record<string, any>;
+  tags?: string[];
+  isActive: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   
-  // 产品参数
+  // 兼容性字段（向后兼容）
+  type?: 'loan' | 'credit' | 'investment' | 'insurance' | 'other';
   minAmount?: number;
   maxAmount?: number;
   interestRate?: number;
   term?: string;
-  
-  // 状态
-  status: 'active' | 'inactive' | 'discontinued';
-  
-  // 时间戳
-  createdAt: string;
-  updatedAt: string;
+  status?: 'active' | 'inactive' | 'discontinued';
 }
 
 // 图谱节点类型
@@ -125,6 +161,8 @@ export interface GraphNode {
   
   // 额外属性
   industry?: string;
+  riskLevel?: 'low' | 'medium' | 'high';
+  metadata?: Record<string, any>;
   [key: string]: any;
 }
 
@@ -133,7 +171,7 @@ export interface GraphLink {
   id?: string;
   source: string | GraphNode;
   target: string | GraphNode;
-  type: 'investment' | 'guarantee' | 'supply' | 'risk' | 'other';
+  type: 'investment' | 'guarantee' | 'supply' | 'risk' | 'employment' | 'partnership' | 'ownership' | 'other';
   value?: number; // 关系权重
   
   // 显示属性
@@ -147,36 +185,38 @@ export interface GraphData {
   links: GraphLink[];
 }
 
-// 客户数据类型
+// 客户数据类型 - 与后端保持一致
 export interface Client {
   id: string;
   name: string;
   company: string;
-  industry: string;
-  position: string;
-  email: string;
-  phone: string;
+  industry?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
   status: 'active' | 'inactive' | 'potential' | 'lost';
   priority: 'high' | 'medium' | 'low';
-  assignedTo: string; // 负责人ID
-  assignedToName: string; // 负责人姓名
-  lastContact?: Date | undefined;
-  nextFollowUp?: Date | undefined;
-  estimatedValue?: number | undefined;
-  notes: string;
-  tags: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  assignedTo?: string; // 负责人ID
+  assignedToName?: string; // 负责人姓名
+  lastContact?: Date | string;
+  nextFollowUp?: Date | string;
+  estimatedValue?: number;
+  notes?: string;
+  tags?: string[];
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 // 搜索参数类型
 export interface SearchParams {
   query?: string;
+  keyword?: string;
   type?: 'all' | 'enterprise' | 'person' | 'product';
   industry?: string;
   status?: string;
   page?: number;
   pageSize?: number;
+  limit?: number; // 后端兼容
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -187,6 +227,7 @@ export interface FilterParams {
   businessStatus?: string[];
   clientLevels?: string[];
   riskLevels?: string[];
+  riskLevel?: string[];
   scoreRange?: {
     min: number;
     max: number;
@@ -196,6 +237,8 @@ export interface FilterParams {
     startDate: string;
     endDate: string;
     dateType: 'created' | 'updated' | 'establishment';
+    start?: Date;
+    end?: Date;
   };
 }
 
@@ -203,25 +246,29 @@ export interface FilterParams {
 export interface DataImportTask {
   id: string;
   name: string;
+  sourceId?: string;
+  sourceName?: string;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   progress: number; // 0-100
   
   // 任务信息
-  dataType: 'enterprise' | 'relationship' | 'person' | 'product';
-  fileName: string;
-  fileSize: number;
+  dataType?: 'enterprise' | 'relationship' | 'person' | 'product';
+  fileName?: string;
+  fileSize?: number;
   totalRecords?: number;
   processedRecords?: number;
   errorRecords?: number;
   
   // 时间戳
-  startTime: string;
-  endTime?: string;
-  createdAt: string;
-  updatedAt: string;
+  startTime?: Date | string;
+  endTime?: Date | string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+  createdBy?: string;
   
   // 错误信息
   errors?: string[];
+  errorMessage?: string;
 }
 
 // 数据源状态类型
@@ -229,54 +276,68 @@ export interface DataSource {
   id: string;
   name: string;
   type: string;
-  status: 'active' | 'warning' | 'error' | 'maintenance';
+  status: 'active' | 'warning' | 'error' | 'maintenance' | 'connected' | 'disconnected' | 'syncing';
   
   // 统计信息
-  recordCount: number;
-  dataSize: string;
-  lastUpdate: string;
-  lastSync?: string;
+  recordCount?: number;
+  totalRecords?: number;
+  errorCount?: number;
+  dataSize?: string;
+  lastUpdate?: string;
+  lastSync?: Date | string;
   
   // 连接信息
-  connectionStatus: 'connected' | 'disconnected' | 'connecting';
+  connectionStatus?: 'connected' | 'disconnected' | 'connecting';
   responseTime?: number;
   
   // 配置
   config: Record<string, any>;
   
   // 时间戳
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 // 分析报告类型
 export interface AnalyticsReport {
   id: string;
-  name: string;
+  name?: string;
+  title?: string;
   type: 'enterprise_analysis' | 'relationship_analysis' | 'risk_assessment' | 'market_analysis';
   status: 'generating' | 'completed' | 'failed';
   
   // 报告内容
-  data: Record<string, any>;
-  charts: ChartData[];
-  summary: string;
-  recommendations: string[];
+  data?: Record<string, any>;
+  results?: Record<string, any>;
+  charts?: ChartData[];
+  summary?: string;
+  recommendations?: string[];
   
   // 参数
   parameters: Record<string, any>;
   
   // 时间戳
-  generatedAt: string;
+  generatedAt?: string;
+  generatedBy?: string;
   validUntil?: string;
+  expiresAt?: Date;
 }
 
 // 图表数据类型
 export interface ChartData {
-  id: string;
-  title: string;
+  id?: string;
+  title?: string;
   type: 'line' | 'bar' | 'pie' | 'scatter' | 'network' | 'heatmap';
   data: any[];
-  config: Record<string, any>;
+  config?: Record<string, any>;
+  labels?: string[];
+  datasets?: Array<{
+    label: string;
+    data: number[];
+    backgroundColor?: string[];
+    borderColor?: string[];
+    borderWidth?: number;
+  }>;
 }
 
 // 系统配置类型
@@ -284,9 +345,10 @@ export interface SystemConfig {
   id: string;
   key: string;
   value: any;
-  type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+  type: 'string' | 'number' | 'boolean' | 'object' | 'array' | 'json';
   description?: string;
   category: string;
+  isPublic?: boolean;
   updatedBy: string;
   updatedAt: string;
 }
@@ -295,21 +357,56 @@ export interface SystemConfig {
 export interface OperationLog {
   id: string;
   userId: string;
-  userName: string;
+  userName?: string;
+  userEmail?: string;
   action: string;
   resource: string;
   resourceId?: string;
   
   // 详情
-  description: string;
+  description?: string;
+  details?: Record<string, any>;
   parameters?: Record<string, any>;
-  result: 'success' | 'failure';
+  result?: 'success' | 'failure';
+  status?: 'success' | 'failure';
   errorMessage?: string;
   
   // 元数据
-  ipAddress: string;
-  userAgent: string;
-  timestamp: string;
+  ipAddress?: string;
+  userAgent?: string;
+  timestamp: Date | string;
+}
+
+// 用户系统
+export type UserRole = 'admin' | 'manager' | 'analyst' | 'viewer';
+export type Permission =
+  | 'view_dashboard' | 'view_enterprise' | 'view_graph' | 'view_prospects'
+  | 'view_search' | 'view_clients' | 'manage_data' | 'manage_system'
+  | 'export_data' | 'import_data' | 'user_management';
+
+export interface User {
+  id?: string;
+  email: string;
+  name: string;
+  department: string;
+  role: UserRole;
+  permissions: Permission[];
+  avatar?: string;
+  isActive?: boolean;
+  lastLogin?: Date | string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  user: User;
+  token: string;
+  expiresAt: string;
 }
 
 // 导出所有类型的联合类型，方便使用
@@ -337,10 +434,10 @@ export interface BusinessOperations {
   getEnterpriseGraph(id: string): Promise<ApiResponse<GraphData>>;
   getEnterpriseRelationships(id: string): Promise<ApiResponse<Relationship[]>>;
   calculateEnterpriseScore(id: string): Promise<ApiResponse<{
-    svsScore: number;
-    desScore: number;
-    nisScore: number;
-    pcsScore: number;
+    svs: number;
+    des: number;
+    nis: number;
+    pcs: number;
   }>>;
   
   // 图谱相关

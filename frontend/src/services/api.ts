@@ -70,7 +70,8 @@ class HttpClient {
       const response = await fetch(url, config);
       
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -118,6 +119,14 @@ class HttpClient {
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
   }
+
+  // PATCH请求
+  async patch<T>(endpoint: string, data?: any): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
 }
 
 // 创建HTTP客户端实例
@@ -160,9 +169,56 @@ class ApiCache {
 
 const apiCache = new ApiCache();
 
+// 认证服务
+export class AuthService {
+  // 用户登录
+  static async login(credentials: { email: string; password: string }): Promise<ApiResponse<{
+    user: any;
+    token: string;
+    expiresAt: string;
+  }>> {
+    try {
+      return await httpClient.post<ApiResponse<any>>('/auth/login', credentials);
+    } catch (error) {
+      console.error('登录失败:', error);
+      throw error;
+    }
+  }
+
+  // 获取当前用户信息
+  static async getCurrentUser(): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.get<ApiResponse<any>>('/auth/me');
+    } catch (error) {
+      console.error('获取用户信息失败:', error);
+      throw error;
+    }
+  }
+
+  // 用户登出
+  static async logout(): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.post<ApiResponse<any>>('/auth/logout');
+    } catch (error) {
+      console.error('登出失败:', error);
+      throw error;
+    }
+  }
+
+  // 刷新token
+  static async refreshToken(): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.post<ApiResponse<any>>('/auth/refresh');
+    } catch (error) {
+      console.error('刷新token失败:', error);
+      throw error;
+    }
+  }
+}
+
 // 企业数据服务
 export class EnterpriseService {
-  // 获取企业列表
+  // 获取企业列表 - 修复分页参数
   static async getEnterprises(
     params: SearchParams & FilterParams = {}
   ): Promise<PaginatedResponse<Enterprise>> {
@@ -171,7 +227,16 @@ export class EnterpriseService {
     if (cached) return cached;
 
     try {
-      const response = await httpClient.get<PaginatedResponse<Enterprise>>('/enterprises', params);
+      // 转换分页参数：pageSize -> limit
+      const apiParams = {
+        ...params,
+        limit: params.pageSize || 20,
+      };
+      // 移除前端特有的参数
+      delete apiParams.pageSize;
+      
+      const response = await httpClient.get<PaginatedResponse<Enterprise>>('/enterprises', apiParams);
+      
       apiCache.set(cacheKey, response, 2 * 60 * 1000); // 2分钟缓存
       return response;
     } catch (error) {
@@ -197,14 +262,54 @@ export class EnterpriseService {
     }
   }
 
-  // 获取企业关系图谱
+  // 创建企业
+  static async createEnterprise(enterprise: Partial<Enterprise>): Promise<ApiResponse<Enterprise>> {
+    try {
+      const response = await httpClient.post<ApiResponse<Enterprise>>('/enterprises', enterprise);
+      // 清除相关缓存
+      apiCache.delete('enterprises_*');
+      return response;
+    } catch (error) {
+      console.error('创建企业失败:', error);
+      throw error;
+    }
+  }
+
+  // 更新企业
+  static async updateEnterprise(id: string, enterprise: Partial<Enterprise>): Promise<ApiResponse<Enterprise>> {
+    try {
+      const response = await httpClient.put<ApiResponse<Enterprise>>(`/enterprises/${id}`, enterprise);
+      // 清除相关缓存
+      apiCache.delete(`enterprise_${id}`);
+      return response;
+    } catch (error) {
+      console.error('更新企业失败:', error);
+      throw error;
+    }
+  }
+
+  // 删除企业
+  static async deleteEnterprise(id: string): Promise<ApiResponse<boolean>> {
+    try {
+      const response = await httpClient.delete<ApiResponse<boolean>>(`/enterprises/${id}`);
+      // 清除相关缓存
+      apiCache.delete(`enterprise_${id}`);
+      return response;
+    } catch (error) {
+      console.error('删除企业失败:', error);
+      throw error;
+    }
+  }
+
+  // 获取企业关系图谱 - 修复API路由
   static async getEnterpriseGraph(id: string): Promise<ApiResponse<GraphData>> {
     const cacheKey = `enterprise_graph_${id}`;
     const cached = apiCache.get<ApiResponse<GraphData>>(cacheKey);
     if (cached) return cached;
 
     try {
-      const response = await httpClient.get<ApiResponse<GraphData>>(`/enterprises/${id}/graph`);
+      // 修复路由：使用正确的图谱API路径
+      const response = await httpClient.get<ApiResponse<GraphData>>(`/graph/enterprise/${id}`);
       apiCache.set(cacheKey, response, 5 * 60 * 1000); // 5分钟缓存
       return response;
     } catch (error) {
@@ -215,10 +320,10 @@ export class EnterpriseService {
 
   // 计算企业评分
   static async calculateScore(id: string): Promise<ApiResponse<{
-    svsScore: number;
-    desScore: number;
-    nisScore: number;
-    pcsScore: number;
+    svs: number;
+    des: number;
+    nis: number;
+    pcs: number;
   }>> {
     try {
       return await httpClient.post(`/enterprises/${id}/calculate-score`);
@@ -228,10 +333,10 @@ export class EnterpriseService {
       return {
         success: true,
         data: {
-          svsScore: 87.5,
-          desScore: 92.3,
-          nisScore: 78.6,
-          pcsScore: 86.1,
+          svs: 87.5,
+          des: 92.3,
+          nis: 78.6,
+          pcs: 86.1,
         }
       };
     }
@@ -245,30 +350,34 @@ export class EnterpriseService {
     const mockEnterprises: Enterprise[] = [
       {
         id: '1',
-        name: '星达科技有限公司',
-        creditCode: '91330106MA2GL1RQ5X',
-        registrationAddress: '北京市海淀区中关村南大街5号',
-        establishmentDate: '2018-03-15',
-        registeredCapital: 80000000,
-        industry: '信息技术服务',
-        businessScope: '计算机软硬件技术开发、技术服务、技术咨询',
-        employeeCount: 235,
-        contactPhone: '010-88887777',
-        legalRepresentative: '张三',
+        name: '华为技术有限公司',
+        creditCode: '91440300779711838H',
+        registrationAddress: '广东省深圳市龙岗区坂田街道华为基地',
+        establishmentDate: '1987-09-15',
+        registeredCapital: 40000000000,
+        industry: '信息技术',
+        businessScope: '通信设备研发、生产、销售',
+        employeeCount: 180000,
+        contactPhone: '0755-28560000',
+        legalRepresentative: '任正非',
+        status: 'active' as const,
+        riskLevel: 'low' as const,
         businessStatus: 'active',
-        svsScore: 87.5,
+        svs: 95.5,
+        des: 92.3,
+        nis: 88.7,
+        pcs: 94.2,
+        svsScore: 95.5,
         desScore: 92.3,
-        nisScore: 78.6,
-        pcsScore: 86.1,
-        isClient: true,
-        isProspect: false,
+        nisScore: 88.7,
+        pcsScore: 94.2,
+        isClient: false,
+        isProspect: true,
         clientLevel: 'A',
-        riskLevel: 'low',
         createdAt: '2023-01-15T08:00:00Z',
         updatedAt: '2025-01-15T08:00:00Z',
         lastContactDate: '2025-01-15T08:00:00Z',
       },
-      // 可以添加更多模拟数据
     ];
 
     return {
@@ -279,7 +388,8 @@ export class EnterpriseService {
         pageSize: params.pageSize || 20,
         total: mockEnterprises.length,
         totalPages: Math.ceil(mockEnterprises.length / (params.pageSize || 20)),
-      }
+      },
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -288,25 +398,30 @@ export class EnterpriseService {
     
     const mockEnterprise: Enterprise = {
       id,
-      name: '星达科技有限公司',
-      creditCode: '91330106MA2GL1RQ5X',
-      registrationAddress: '北京市海淀区中关村南大街5号',
-      establishmentDate: '2018-03-15',
-      registeredCapital: 80000000,
-      industry: '信息技术服务',
-      businessScope: '计算机软硬件技术开发、技术服务、技术咨询',
-      employeeCount: 235,
-      contactPhone: '010-88887777',
-      legalRepresentative: '张三',
+      name: '华为技术有限公司',
+      creditCode: '91440300779711838H',
+      registrationAddress: '广东省深圳市龙岗区坂田街道华为基地',
+      establishmentDate: '1987-09-15',
+      registeredCapital: 40000000000,
+      industry: '信息技术',
+      businessScope: '通信设备研发、生产、销售',
+      employeeCount: 180000,
+      contactPhone: '0755-28560000',
+      legalRepresentative: '任正非',
+      status: 'active' as const,
+      riskLevel: 'low' as const,
       businessStatus: 'active',
-      svsScore: 87.5,
+      svs: 95.5,
+      des: 92.3,
+      nis: 88.7,
+      pcs: 94.2,
+      svsScore: 95.5,
       desScore: 92.3,
-      nisScore: 78.6,
-      pcsScore: 86.1,
-      isClient: true,
-      isProspect: false,
+      nisScore: 88.7,
+      pcsScore: 94.2,
+      isClient: false,
+      isProspect: true,
       clientLevel: 'A',
-      riskLevel: 'low',
       createdAt: '2023-01-15T08:00:00Z',
       updatedAt: '2025-01-15T08:00:00Z',
       lastContactDate: '2025-01-15T08:00:00Z',
@@ -314,7 +429,8 @@ export class EnterpriseService {
 
     return {
       success: true,
-      data: mockEnterprise
+      data: mockEnterprise,
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -323,10 +439,10 @@ export class EnterpriseService {
 
     const mockGraphData: GraphData = {
       nodes: [
-        { id: "ent1", name: "星达科技有限公司", type: "enterprise", value: 1.0 },
-        { id: "ent2", name: "蓝海科技", type: "enterprise", value: 0.8 },
-        { id: "person1", name: "王总", type: "person", value: 0.8 },
-        { id: "product1", name: "科技贷", type: "product", value: 0.6 },
+        { id: "ent1", name: "华为技术有限公司", type: "enterprise", value: 1.0 },
+        { id: "ent2", name: "腾讯控股有限公司", type: "enterprise", value: 0.8 },
+        { id: "person1", name: "任正非", type: "person", value: 0.8 },
+        { id: "product1", name: "华为手机", type: "product", value: 0.6 },
       ],
       links: [
         { source: "person1", target: "ent1", type: "investment", value: 0.8 },
@@ -337,7 +453,8 @@ export class EnterpriseService {
 
     return {
       success: true,
-      data: mockGraphData
+      data: mockGraphData,
+      timestamp: new Date().toISOString()
     };
   }
 }
@@ -532,6 +649,288 @@ export class SearchService {
   }
 }
 
+// 用户管理服务
+export class UserService {
+  // 获取用户列表
+  static async getUsers(params: SearchParams & FilterParams = {}): Promise<PaginatedResponse<any>> {
+    try {
+      return await httpClient.get<PaginatedResponse<any>>('/users', params);
+    } catch (error) {
+      console.error('获取用户列表失败:', error);
+      return this.getMockUsers(params);
+    }
+  }
+
+  // 获取用户详情
+  static async getUser(id: string): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.get<ApiResponse<any>>(`/users/${id}`);
+    } catch (error) {
+      console.error('获取用户详情失败:', error);
+      return this.getMockUser(id);
+    }
+  }
+
+  // 创建用户
+  static async createUser(userData: any): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.post<ApiResponse<any>>('/users', userData);
+    } catch (error) {
+      console.error('创建用户失败:', error);
+      return {
+        success: false,
+        message: '创建用户功能暂时不可用'
+      };
+    }
+  }
+
+  // 更新用户
+  static async updateUser(id: string, userData: any): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.put<ApiResponse<any>>(`/users/${id}`, userData);
+    } catch (error) {
+      console.error('更新用户失败:', error);
+      return {
+        success: false,
+        message: '更新用户功能暂时不可用'
+      };
+    }
+  }
+
+  // 删除用户
+  static async deleteUser(id: string): Promise<ApiResponse<boolean>> {
+    try {
+      return await httpClient.delete<ApiResponse<boolean>>(`/users/${id}`);
+    } catch (error) {
+      console.error('删除用户失败:', error);
+      return {
+        success: false,
+        message: '删除用户功能暂时不可用'
+      };
+    }
+  }
+
+  // 获取用户统计
+  static async getUserStats(): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.get<ApiResponse<any>>('/users/stats/overview');
+    } catch (error) {
+      console.error('获取用户统计失败:', error);
+      return this.getMockUserStats();
+    }
+  }
+
+  // 批量更新用户状态
+  static async batchUpdateStatus(userIds: string[], isActive: boolean): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.patch<ApiResponse<any>>('/users/batch/status', { userIds, isActive });
+    } catch (error) {
+      console.error('批量更新用户状态失败:', error);
+      return {
+        success: false,
+        message: '批量更新功能暂时不可用'
+      };
+    }
+  }
+
+  // 修改密码
+  static async changePassword(id: string, currentPassword: string, newPassword: string): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.put<ApiResponse<any>>(`/users/${id}/password`, {
+        currentPassword,
+        newPassword
+      });
+    } catch (error) {
+      console.error('修改密码失败:', error);
+      return {
+        success: false,
+        message: '修改密码功能暂时不可用'
+      };
+    }
+  }
+
+  private static async getMockUsers(params: SearchParams & FilterParams): Promise<PaginatedResponse<any>> {
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    const mockUsers = [
+      {
+        id: '1',
+        name: '系统管理员',
+        email: 'admin@eig.com',
+        department: 'IT部门',
+        role: 'admin',
+        isActive: true,
+        lastLogin: new Date('2025-01-15T10:30:00Z'),
+        createdAt: '2024-01-01T00:00:00Z'
+      },
+      {
+        id: '2',
+        name: '业务经理',
+        email: 'manager@eig.com',
+        department: '业务部门',
+        role: 'manager',
+        isActive: true,
+        lastLogin: new Date('2025-01-15T09:15:00Z'),
+        createdAt: '2024-02-01T00:00:00Z'
+      }
+    ];
+
+    return {
+      success: true,
+      data: mockUsers,
+      pagination: {
+        page: params.page || 1,
+        pageSize: params.pageSize || 20,
+        total: mockUsers.length,
+        totalPages: 1
+      }
+    };
+  }
+
+  private static async getMockUser(id: string): Promise<ApiResponse<any>> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    const mockUser = {
+      id,
+      name: '系统管理员',
+      email: 'admin@eig.com',
+      department: 'IT部门',
+      role: 'admin',
+      isActive: true,
+      lastLogin: new Date('2025-01-15T10:30:00Z'),
+      createdAt: '2024-01-01T00:00:00Z'
+    };
+
+    return {
+      success: true,
+      data: mockUser
+    };
+  }
+
+  private static async getMockUserStats(): Promise<ApiResponse<any>> {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    
+    return {
+      success: true,
+      data: {
+        totalUsers: 12,
+        activeUsers: 11,
+        inactiveUsers: 1,
+        roleBreakdown: {
+          admin: 2,
+          manager: 3,
+          analyst: 4,
+          viewer: 3
+        },
+        activityMetrics: {
+          newThisMonth: 2,
+          activeThisWeek: 8
+        }
+      }
+    };
+  }
+}
+
+// 搜索服务增强
+export class SearchServiceEnhanced extends SearchService {
+  // 高级搜索
+  static async advancedSearch(searchParams: {
+    keyword?: string;
+    entityType?: string;
+    filters?: any;
+    sortBy?: string;
+    sortOrder?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.post<ApiResponse<any>>('/search/advanced', searchParams);
+    } catch (error) {
+      console.error('高级搜索失败:', error);
+      return this.getMockAdvancedSearchResults(searchParams);
+    }
+  }
+
+  // 获取搜索建议
+  static async getSearchSuggestions(query: string, type?: string): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.get<ApiResponse<any>>('/search/suggestions', { query, type });
+    } catch (error) {
+      console.error('获取搜索建议失败:', error);
+      return this.getMockSuggestions(query, type);
+    }
+  }
+
+  // 获取热门搜索
+  static async getPopularSearches(): Promise<ApiResponse<any>> {
+    try {
+      return await httpClient.get<ApiResponse<any>>('/search/popular');
+    } catch (error) {
+      console.error('获取热门搜索失败:', error);
+      return this.getMockPopularSearches();
+    }
+  }
+
+  private static async getMockAdvancedSearchResults(params: any): Promise<ApiResponse<any>> {
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    return {
+      success: true,
+      data: {
+        results: [
+          {
+            id: '1',
+            name: '星达科技有限公司',
+            type: 'enterprise',
+            industry: '信息技术',
+            registeredCapital: 80000000,
+            riskLevel: 'low'
+          }
+        ],
+        pagination: {
+          page: params.page || 1,
+          limit: params.limit || 20,
+          total: 1,
+          totalPages: 1
+        }
+      }
+    };
+  }
+
+  private static async getMockSuggestions(query: string, type?: string): Promise<ApiResponse<any>> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    return {
+      success: true,
+      data: {
+        suggestions: [
+          { text: `${query}科技`, type: 'enterprise', subtitle: '信息技术' },
+          { text: `${query}集团`, type: 'enterprise', subtitle: '投资管理' }
+        ]
+      }
+    };
+  }
+
+  private static async getMockPopularSearches(): Promise<ApiResponse<any>> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    return {
+      success: true,
+      data: {
+        popularIndustries: [
+          { keyword: '信息技术', count: 1250 },
+          { keyword: '金融服务', count: 980 },
+          { keyword: '制造业', count: 756 }
+        ],
+        popularEnterprises: [
+          { keyword: '华为技术有限公司', score: 95.5 },
+          { keyword: '腾讯控股有限公司', score: 94.3 }
+        ]
+      }
+    };
+  }
+}
+
 // 数据管理服务
 export class DataService {
   // 获取数据源状态
@@ -635,14 +1034,39 @@ export class DataService {
   }
 }
 
+// 自动设置认证token
+const initializeAuth = () => {
+  const token = localStorage.getItem('eig_token');
+  if (token) {
+    httpClient.setAuthToken(token);
+  }
+};
+
+// 初始化认证
+initializeAuth();
+
+// 监听token变化
+window.addEventListener('storage', (e) => {
+  if (e.key === 'eig_token') {
+    if (e.newValue) {
+      httpClient.setAuthToken(e.newValue);
+    } else {
+      httpClient.removeAuthToken();
+      apiCache.clear();
+    }
+  }
+});
+
 // 设置认证token
 export function setAuthToken(token: string) {
   httpClient.setAuthToken(token);
+  localStorage.setItem('eig_token', token);
 }
 
 // 移除认证token
 export function removeAuthToken() {
   httpClient.removeAuthToken();
+  localStorage.removeItem('eig_token');
   apiCache.clear();
 }
 
@@ -653,10 +1077,13 @@ export function clearCache() {
 
 // 导出所有服务
 export const ApiService = {
+  Auth: AuthService,
   Enterprise: EnterpriseService,
   Graph: GraphService,
   Client: ClientService,
   Search: SearchService,
+  SearchEnhanced: SearchServiceEnhanced,
+  User: UserService,
   Data: DataService,
   setAuthToken,
   removeAuthToken,
