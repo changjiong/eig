@@ -595,4 +595,73 @@ router.put('/:id/password', authenticate, async (req: Request, res: Response) =>
   }
 });
 
+// 删除用户（软删除）
+router.delete('/:id', authenticate, requireAnyRole(['admin']), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    // 不能删除自己
+    if (req.user?.id === id) {
+      return res.status(400).json({
+        success: false,
+        message: '不能删除自己的账户',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const client = await pool.connect();
+    
+    try {
+      // 检查用户是否存在
+      const userResult = await client.query('SELECT id, name, role FROM users WHERE id = $1', [id]);
+      
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '用户不存在',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      const user = userResult.rows[0];
+      
+      // 不能删除其他管理员
+      if (user.role === 'admin') {
+        return res.status(400).json({
+          success: false,
+          message: '不能删除管理员账户',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // 软删除：禁用用户而不是真删除
+      const result = await client.query(`
+        UPDATE users SET
+          is_active = false,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING id, name
+      `, [id]);
+      
+      return res.status(200).json({
+        success: true,
+        data: { id: result.rows[0].id },
+        message: `用户 "${result.rows[0].name}" 已删除`,
+        timestamp: new Date().toISOString()
+      });
+      
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '删除用户失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router; 

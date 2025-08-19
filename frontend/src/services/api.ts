@@ -297,7 +297,17 @@ export class EnterpriseService {
     nis: number;
     pcs: number;
   }>> {
-    return await httpClient.post(`/enterprises/${id}/calculate-score`);
+    const response = await httpClient.post<ApiResponse<{
+      svs: number;
+      des: number;
+      nis: number;
+      pcs: number;
+    }>>(`/enterprises/${id}/calculate-score`);
+    
+    // 清除该企业的缓存
+    apiCache.delete(`enterprise_${id}`);
+    
+    return response;
   }
 }
 
@@ -315,13 +325,64 @@ export class GraphService {
   }
 
   // 查找最短路径
-  static async findShortestPath(sourceId: string, targetId: string): Promise<ApiResponse<GraphNode[]>> {
-    return await httpClient.get<ApiResponse<GraphNode[]>>(`/graph/path/${sourceId}/${targetId}`);
+  static async findShortestPath(fromId: string, toId: string): Promise<ApiResponse<any>> {
+    return await httpClient.get<ApiResponse<any>>('/graph/path', { fromId, toId });
   }
 
-  // 获取节点邻居
-  static async getNodeNeighbors(nodeId: string, depth: number = 2): Promise<ApiResponse<GraphData>> {
-    return await httpClient.get<ApiResponse<GraphData>>(`/graph/neighbors/${nodeId}`, { depth });
+  // 获取节点邻居 - 修改为使用正确的API
+  static async getNodeNeighbors(nodeId: string, depth: number = 1): Promise<ApiResponse<GraphData>> {
+    return await httpClient.get<ApiResponse<GraphData>>(`/graph/enterprise/${nodeId}`, { depth });
+  }
+
+  // 创建关系
+  static async createRelationship(relationship: {
+    fromId: string;
+    fromType: string;
+    toId: string;
+    toType: string;
+    relationshipType: string;
+    strength?: number;
+    description?: string;
+    metadata?: any;
+  }): Promise<ApiResponse<any>> {
+    const response = await httpClient.post<ApiResponse<any>>('/graph/relationships', relationship);
+    apiCache.clear(); // 清除图谱相关缓存
+    return response;
+  }
+
+  // 更新关系
+  static async updateRelationship(id: string, updates: {
+    relationshipType?: string;
+    strength?: number;
+    description?: string;
+    metadata?: any;
+  }): Promise<ApiResponse<any>> {
+    const response = await httpClient.put<ApiResponse<any>>(`/graph/relationships/${id}`, updates);
+    apiCache.clear();
+    return response;
+  }
+
+  // 删除关系
+  static async deleteRelationship(id: string): Promise<ApiResponse<any>> {
+    const response = await httpClient.delete<ApiResponse<any>>(`/graph/relationships/${id}`);
+    apiCache.clear();
+    return response;
+  }
+
+  // 获取图谱统计信息
+  static async getGraphStats(): Promise<ApiResponse<any>> {
+    const cacheKey = 'graph_stats';
+    const cached = apiCache.get<ApiResponse<any>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await httpClient.get<ApiResponse<any>>('/graph/stats');
+    apiCache.set(cacheKey, response, 2 * 60 * 1000); // 2分钟缓存
+    return response;
+  }
+
+  // 搜索节点
+  static async searchNodes(query: string, type?: string, limit: number = 20): Promise<ApiResponse<any>> {
+    return await httpClient.get<ApiResponse<any>>('/graph/search/nodes', { query, type, limit });
   }
 }
 
@@ -369,6 +430,34 @@ export class ClientService {
     apiCache.delete(`client_${id}`);
     return response;
   }
+
+  // 批量更新客户状态
+  static async batchUpdateStatus(clientIds: string[], status: string): Promise<ApiResponse<any>> {
+    const response = await httpClient.patch<ApiResponse<any>>('/clients/batch/status', { clientIds, status });
+    apiCache.clear(); // 清除客户相关缓存
+    return response;
+  }
+
+  // 获取客户统计信息
+  static async getClientStats(): Promise<ApiResponse<any>> {
+    const cacheKey = 'client_stats';
+    const cached = apiCache.get<ApiResponse<any>>(cacheKey);
+    if (cached) return cached;
+
+    const response = await httpClient.get<ApiResponse<any>>('/clients/stats/overview');
+    apiCache.set(cacheKey, response, 60 * 1000); // 1分钟缓存
+    return response;
+  }
+
+  // 添加客户跟进记录
+  static async addFollowUp(clientId: string, notes: string, nextFollowUp?: string): Promise<ApiResponse<any>> {
+    const response = await httpClient.post<ApiResponse<any>>(`/clients/${clientId}/follow-up`, {
+      notes,
+      nextFollowUp
+    });
+    apiCache.delete(`client_${clientId}`); // 清除该客户的缓存
+    return response;
+  }
 }
 
 // 搜索服务
@@ -412,6 +501,11 @@ export class UserService {
   // 删除用户
   static async deleteUser(id: string): Promise<ApiResponse<boolean>> {
     return await httpClient.delete<ApiResponse<boolean>>(`/users/${id}`);
+  }
+
+  // 更新用户状态
+  static async updateUserStatus(id: string, isActive: boolean): Promise<ApiResponse<any>> {
+    return await httpClient.patch<ApiResponse<any>>(`/users/${id}/status`, { isActive });
   }
 
   // 获取用户统计
@@ -462,16 +556,45 @@ export class SearchServiceEnhanced extends SearchService {
 // 数据管理服务
 export class DataService {
   // 获取数据源状态
-  static async getDataSources(): Promise<ApiResponse<DataSource[]>> {
-    return await httpClient.get<ApiResponse<DataSource[]>>('/data/sources');
+  static async getDataSources(): Promise<PaginatedResponse<DataSource>> {
+    return await httpClient.get<PaginatedResponse<DataSource>>('/data/sources');
+  }
+
+  // 创建数据源
+  static async createDataSource(dataSource: {
+    name: string;
+    type: string;
+    config: any;
+  }): Promise<ApiResponse<DataSource>> {
+    return await httpClient.post<ApiResponse<DataSource>>('/data/sources', dataSource);
   }
 
   // 获取导入任务
-  static async getImportTasks(): Promise<ApiResponse<DataImportTask[]>> {
-    return await httpClient.get<ApiResponse<DataImportTask[]>>('/data/import-tasks');
+  static async getImportTasks(status?: string): Promise<PaginatedResponse<DataImportTask>> {
+    return await httpClient.get<PaginatedResponse<DataImportTask>>('/data/tasks', { status });
   }
 
-  // 开始数据导入
+  // 创建导入任务
+  static async createImportTask(task: {
+    name: string;
+    sourceId: string;
+    sourceName: string;
+  }): Promise<ApiResponse<DataImportTask>> {
+    return await httpClient.post<ApiResponse<DataImportTask>>('/data/import', task);
+  }
+
+  // 更新任务状态
+  static async updateTaskStatus(taskId: string, updates: {
+    status?: string;
+    progress?: number;
+    processedRecords?: number;
+    errorRecords?: number;
+    errorMessage?: string;
+  }): Promise<ApiResponse<DataImportTask>> {
+    return await httpClient.put<ApiResponse<DataImportTask>>(`/data/tasks/${taskId}`, updates);
+  }
+
+  // 开始数据导入 - 保持原有的文件上传方法
   static async startImport(file: File, dataType: string): Promise<ApiResponse<DataImportTask>> {
     const formData = new FormData();
     formData.append('file', file);

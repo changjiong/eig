@@ -37,78 +37,12 @@ import {
   Save,
   RefreshCw,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
-
-// Mock graph data
-const mockLargeGraphData = {
-  nodes: [
-    // Enterprise nodes
-    { id: "e1", name: "星达科技有限公司", type: "enterprise" as "enterprise", value: 1.0, industry: "IT" },
-    { id: "e2", name: "蓝海科技", type: "enterprise" as "enterprise", value: 0.8, industry: "IT" },
-    { id: "e3", name: "金辉集团", type: "enterprise" as "enterprise", value: 0.9, industry: "投资" },
-    { id: "e4", name: "云尚数据", type: "enterprise" as "enterprise", value: 0.7, industry: "IT" },
-    { id: "e5", name: "宏远投资", type: "enterprise" as "enterprise", value: 0.6, industry: "投资" },
-    { id: "e6", name: "工商银行", type: "enterprise" as "enterprise", value: 0.9, industry: "金融" },
-    { id: "e7", name: "恒宝科技", type: "enterprise" as "enterprise", value: 0.7, industry: "IT" },
-    { id: "e8", name: "长城汽车", type: "enterprise" as "enterprise", value: 0.8, industry: "制造" },
-    { id: "e9", name: "华强半导体", type: "enterprise" as "enterprise", value: 0.9, industry: "制造" },
-    { id: "e10", name: "远大集团", type: "enterprise" as "enterprise", value: 0.7, industry: "地产" },
-    
-    // Person nodes
-    { id: "p1", name: "王总", type: "person" as "person", value: 0.8 },
-    { id: "p2", name: "李董", type: "person" as "person", value: 0.7 },
-    { id: "p3", name: "张经理", type: "person" as "person", value: 0.5 },
-    { id: "p4", name: "陈博士", type: "person" as "person", value: 0.6 },
-    { id: "p5", name: "刘总", type: "person" as "person", value: 0.7 },
-    
-    // Product nodes
-    { id: "pr1", name: "科技贷", type: "product" as "product", value: 0.6 },
-    { id: "pr2", name: "综合授信", type: "product" as "product", value: 0.7 },
-    { id: "pr3", name: "企业债", type: "product" as "product", value: 0.5 },
-    { id: "pr4", name: "物流金融", type: "product" as "product", value: 0.6 },
-  ],
-  links: [
-    // Supply chain relationships
-    { source: "e1", target: "e2", type: "supply" as "supply", value: 0.9 },
-    { source: "e2", target: "e4", type: "supply" as "supply", value: 0.5 },
-    { source: "e7", target: "e9", type: "supply" as "supply", value: 0.7 },
-    { source: "e8", target: "e9", type: "supply" as "supply", value: 0.8 },
-    { source: "e9", target: "e1", type: "supply" as "supply", value: 0.6 },
-    
-    // Investment relationships
-    { source: "p1", target: "e1", type: "investment" as "investment", value: 0.8 },
-    { source: "p2", target: "e2", type: "investment" as "investment", value: 0.7 },
-    { source: "e3", target: "e1", type: "investment" as "investment", value: 0.8 },
-    { source: "p3", target: "e4", type: "investment" as "investment", value: 0.6 },
-    { source: "e5", target: "e7", type: "investment" as "investment", value: 0.7 },
-    { source: "p4", target: "e9", type: "investment" as "investment", value: 0.8 },
-    { source: "p5", target: "e10", type: "investment" as "investment", value: 0.9 },
-    { source: "e10", target: "e8", type: "investment" as "investment", value: 0.6 },
-    
-    // Guarantee relationships
-    { source: "e5", target: "e1", type: "guarantee" as "guarantee", value: 0.7 },
-    { source: "e1", target: "e7", type: "guarantee" as "guarantee", value: 0.5 },
-    { source: "e10", target: "e3", type: "guarantee" as "guarantee", value: 0.6 },
-    
-    // Risk relationships
-    { source: "e2", target: "e1", type: "risk" as "risk", value: 0.4 },
-    { source: "e9", target: "e7", type: "risk" as "risk", value: 0.3 },
-    
-    // Other relationships
-    { source: "e3", target: "p2", type: "other" as "other", value: 0.3 },
-    { source: "p1", target: "p5", type: "other" as "other", value: 0.4 },
-    
-    // Product relationships
-    { source: "e1", target: "pr1", type: "other" as "other", value: 0.6 },
-    { source: "e6", target: "pr1", type: "other" as "other", value: 0.8 },
-    { source: "e6", target: "pr2", type: "other" as "other", value: 0.7 },
-    { source: "e6", target: "pr3", type: "other" as "other", value: 0.6 },
-    { source: "e6", target: "pr4", type: "other" as "other", value: 0.5 },
-    { source: "e3", target: "pr2", type: "other" as "other", value: 0.4 },
-    { source: "e5", target: "pr3", type: "other" as "other", value: 0.3 },
-    { source: "e8", target: "pr4", type: "other" as "other", value: 0.5 },
-  ]
-};
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ApiService } from "@/services/api";
+import { GraphData, GraphNode } from "@/types/database";
 
 export default function GraphPage() {
   const [graphSize, setGraphSize] = useState<{ width: number; height: number }>({
@@ -116,11 +50,15 @@ export default function GraphPage() {
     height: 600,
   });
   
-  // Data state
-  const [isLoading, setIsLoading] = useState(false);
+  // 数据状态
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [originalData, setOriginalData] = useState<GraphData | null>(null);
+  const [filteredData, setFilteredData] = useState<GraphData | null>(null);
+  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [graphStats, setGraphStats] = useState<any>(null);
   
-  // Filter state
-  const [filteredData, setFilteredData] = useState(mockLargeGraphData);
+  // 筛选状态
   const [searchTerm, setSearchTerm] = useState("");
   const [relationshipType, setRelationshipType] = useState("all");
   const [pathDepth, setPathDepth] = useState("3");
@@ -129,40 +67,167 @@ export default function GraphPage() {
   const [showProductNodes, setShowProductNodes] = useState(true);
   const [minimumRelationshipStrength, setMinimumRelationshipStrength] = useState(30);
   
-  // Apply filters when any filter value changes
-  useEffect(() => {
-    // Start with the original data
-    let nodes = [...mockLargeGraphData.nodes];
+  // 获取图谱数据
+  const fetchGraphData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+             const [graphResponse, statsResponse] = await Promise.allSettled([
+         ApiService.Graph.getFullGraph(),
+         ApiService.Graph.getGraphStats()
+       ]);
+      
+      // 处理图谱数据
+      if (graphResponse.status === 'fulfilled' && graphResponse.value.success) {
+        setOriginalData(graphResponse.value.data);
+        setFilteredData(graphResponse.value.data);
+      } else {
+        console.error('获取图谱数据失败:', graphResponse);
+        setError('获取图谱数据失败');
+      }
+      
+      // 处理统计数据
+      if (statsResponse.status === 'fulfilled' && statsResponse.value.success) {
+        setGraphStats(statsResponse.value.data);
+      }
+      
+    } catch (error) {
+      console.error('获取图谱数据失败:', error);
+      setError('获取图谱数据失败，请稍后重试');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  // 搜索节点
+  const searchNodes = async (query: string) => {
+    if (!query.trim()) return;
     
-    // Apply node type filters
+    try {
+      const response = await ApiService.Graph.searchNodes(query, relationshipType === "all" ? undefined : relationshipType);
+      
+      if (response.success) {
+        const searchResults = response.data.nodes || [];
+        // 创建基于搜索结果的图谱数据
+        const searchGraphData: GraphData = {
+          nodes: searchResults,
+          links: originalData?.links?.filter(link => 
+            searchResults.some(node => node.id === link.source || node.id === link.target)
+          ) || []
+        };
+        setFilteredData(searchGraphData);
+      }
+    } catch (error) {
+      console.error('搜索节点失败:', error);
+    }
+  };
+  
+  // 应用筛选器
+  const applyFilters = () => {
+    if (!originalData) return;
+    
+    let nodes = [...originalData.nodes];
+    
+    // 应用节点类型筛选
     const allowedTypes: ("enterprise" | "person" | "product")[] = [];
-    if (showEnterpriseNodes) allowedTypes.push("enterprise" as "enterprise");
-    if (showPersonNodes) allowedTypes.push("person" as "person");
-    if (showProductNodes) allowedTypes.push("product" as "product");
+    if (showEnterpriseNodes) allowedTypes.push("enterprise");
+    if (showPersonNodes) allowedTypes.push("person");
+    if (showProductNodes) allowedTypes.push("product");
     
     nodes = nodes.filter(node => allowedTypes.includes(node.type));
     
-    // Apply search term filter if any
+    // 应用搜索词筛选
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       nodes = nodes.filter(node => node.name.toLowerCase().includes(term));
     }
     
-    // Get the node IDs that passed the filters
+    // 获取通过筛选的节点ID
     const nodeIds = new Set(nodes.map(node => node.id));
     
-    // Filter links based on node presence and relationship type
-    let links = mockLargeGraphData.links.filter(link => 
+    // 筛选连接
+    let links = originalData.links.filter(link => 
       nodeIds.has(link.source as string) && 
       nodeIds.has(link.target as string) &&
       (relationshipType === "all" || link.type === relationshipType) &&
       (link.value !== undefined ? link.value * 100 >= minimumRelationshipStrength : true)
     );
     
-    // Set the filtered data
     setFilteredData({ nodes, links });
-    
-  }, [searchTerm, relationshipType, pathDepth, showEnterpriseNodes, showPersonNodes, showProductNodes, minimumRelationshipStrength]);
+  };
+  
+  // 重新获取数据
+  const handleRefresh = () => {
+    fetchGraphData();
+  };
+  
+  // 搜索处理
+  const handleSearch = () => {
+    if (searchTerm.trim()) {
+      searchNodes(searchTerm);
+    } else {
+      applyFilters();
+    }
+  };
+  
+  // 初始化数据加载
+  useEffect(() => {
+    fetchGraphData();
+  }, []);
+  
+  // 筛选器变化时应用筛选
+  useEffect(() => {
+    if (originalData && !searchTerm.trim()) {
+      applyFilters();
+    }
+  }, [originalData, relationshipType, pathDepth, showEnterpriseNodes, showPersonNodes, showProductNodes, minimumRelationshipStrength]);
+  
+  // 加载状态
+  if (isLoading) {
+    return (
+      <MainLayout className="p-0 flex flex-col">
+        <div className="border-b border-border p-4 bg-card">
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="flex-1 flex overflow-hidden">
+          <div className="w-72 border-r border-border bg-card p-4">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-32 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              <div className="text-muted-foreground">正在加载图谱数据...</div>
+            </div>
+          </div>
+          <div className="w-80 border-l border-border bg-card p-4">
+            <Skeleton className="h-64 w-full" />
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
+  
+  // 错误状态
+  if (error) {
+    return (
+      <MainLayout className="p-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error}
+            <Button variant="link" className="ml-2" onClick={handleRefresh}>
+              重试
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout className="p-0 flex flex-col">
@@ -176,7 +241,11 @@ export default function GraphPage() {
               className="flex-1"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
             />
+            <Button variant="outline" size="sm" onClick={handleSearch}>
+              搜索
+            </Button>
           </div>
 
           <div className="flex items-center gap-4">
@@ -227,8 +296,8 @@ export default function GraphPage() {
               </Select>
             </div>
 
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
+            <Button variant="outline" size="icon" onClick={handleRefresh}>
+              <RefreshCw className="h-4 w-4" />
             </Button>
 
             <Button variant="outline" size="icon">
@@ -287,7 +356,6 @@ export default function GraphPage() {
                             id="enterprise" 
                             checked={showEnterpriseNodes} 
                             onCheckedChange={setShowEnterpriseNodes} 
-                            defaultChecked 
                           />
                           <Label htmlFor="enterprise" className="text-sm">
                             企业节点
@@ -298,7 +366,6 @@ export default function GraphPage() {
                             id="person" 
                             checked={showPersonNodes}
                             onCheckedChange={setShowPersonNodes}
-                            defaultChecked 
                           />
                           <Label htmlFor="person" className="text-sm">
                             人物节点
@@ -309,7 +376,6 @@ export default function GraphPage() {
                             id="product" 
                             checked={showProductNodes}
                             onCheckedChange={setShowProductNodes}
-                            defaultChecked 
                           />
                           <Label htmlFor="product" className="text-sm">
                             产品节点
@@ -319,9 +385,8 @@ export default function GraphPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-xs">关系强度</Label>
+                      <Label className="text-xs">关系强度 ({minimumRelationshipStrength}%)</Label>
                       <Slider 
-                        defaultValue={[30]} 
                         value={[minimumRelationshipStrength]} 
                         onValueChange={(values) => setMinimumRelationshipStrength(values[0])} 
                         min={0} 
@@ -351,6 +416,32 @@ export default function GraphPage() {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="statistics">
+                <AccordionTrigger>图谱统计</AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-3 text-sm">
+                    {graphStats ? (
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">企业节点：</span>
+                          <span className="font-medium">{graphStats.nodes?.enterprise || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">关系数量：</span>
+                          <span className="font-medium">{graphStats.nodes?.relationship || 0}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">当前显示：</span>
+                          <span className="font-medium">{filteredData?.nodes.length || 0}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-muted-foreground">加载统计数据中...</div>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -419,15 +510,23 @@ export default function GraphPage() {
 
         {/* Main graph area */}
         <div className="flex-1 overflow-hidden">
-          {isLoading ? (
+          {filteredData ? (
+            <GraphVisualization 
+              width={graphSize.width} 
+              height={graphSize.height} 
+              data={filteredData}
+              onNodeClick={setSelectedNode}
+            />
+          ) : (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-4">
-                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-                <div className="text-muted-foreground">正在加载图谱数据...</div>
+                <AlertCircle className="h-12 w-12 text-muted-foreground" />
+                <div className="text-muted-foreground">暂无图谱数据</div>
+                <Button variant="outline" onClick={handleRefresh}>
+                  重新加载
+                </Button>
               </div>
             </div>
-          ) : (
-            <GraphVisualization width={graphSize.width} height={graphSize.height} data={filteredData} />
           )}
         </div>
 
@@ -437,25 +536,62 @@ export default function GraphPage() {
             <CardHeader>
               <CardTitle className="text-base">实体详情</CardTitle>
               <CardDescription>
-                选择图谱中的节点查看详细信息
+                {selectedNode ? "选中节点的详细信息" : "选择图谱中的节点查看详细信息"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  当前未选择任何节点。点击图谱中的节点以查看详细信息。
-                </p>
-                
-                <div className="border border-border rounded-md p-3 bg-muted/30">
-                  <h4 className="font-medium text-sm mb-2">操作提示</h4>
-                  <ul className="text-xs text-muted-foreground space-y-1">
-                    <li>• 点击节点: 查看详细信息</li>
-                    <li>• 拖拽节点: 调整位置</li>
-                    <li>• 滚轮: 缩放图谱</li>
-                    <li>• 双击: 将节点设为焦点</li>
-                  </ul>
+              {selectedNode ? (
+                <div className="space-y-4">
+                  <div>
+                    <div className="font-medium text-base">{selectedNode.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedNode.type === 'enterprise' ? '企业' : 
+                       selectedNode.type === 'person' ? '人物' : '产品'}
+                    </div>
+                  </div>
+                  
+                  {selectedNode.industry && (
+                    <div>
+                      <div className="text-sm font-medium">行业</div>
+                      <div className="text-sm text-muted-foreground">{selectedNode.industry}</div>
+                    </div>
+                  )}
+                  
+                  {selectedNode.riskLevel && (
+                    <div>
+                      <div className="text-sm font-medium">风险等级</div>
+                      <div className="text-sm text-muted-foreground">{selectedNode.riskLevel}</div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <div className="text-sm font-medium">节点权重</div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedNode.value ? (selectedNode.value * 100).toFixed(1) + '%' : 'N/A'}
+                    </div>
+                  </div>
+                  
+                  <Button className="w-full" variant="outline">
+                    查看完整信息
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    当前未选择任何节点。点击图谱中的节点以查看详细信息。
+                  </p>
+                  
+                  <div className="border border-border rounded-md p-3 bg-muted/30">
+                    <h4 className="font-medium text-sm mb-2">操作提示</h4>
+                    <ul className="text-xs text-muted-foreground space-y-1">
+                      <li>• 点击节点: 查看详细信息</li>
+                      <li>• 拖拽节点: 调整位置</li>
+                      <li>• 滚轮: 缩放图谱</li>
+                      <li>• 双击: 将节点设为焦点</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

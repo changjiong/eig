@@ -375,4 +375,113 @@ router.put('/:id', authenticate, requirePermission('manage_data'), async (req: R
   }
 });
 
+// 删除企业（软删除）
+router.delete('/:id', authenticate, requirePermission('manage_data'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const client = await pool.connect();
+    
+    try {
+      // 检查企业是否存在
+      const existingResult = await client.query('SELECT id, name FROM enterprises WHERE id = $1', [id]);
+      
+      if (existingResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '企业不存在',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // 软删除：将状态设置为 inactive
+      const result = await client.query(`
+        UPDATE enterprises SET
+          status = 'inactive',
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING id, name
+      `, [id]);
+      
+      return res.status(200).json({
+        success: true,
+        data: { id: result.rows[0].id },
+        message: `企业 "${result.rows[0].name}" 已删除`,
+        timestamp: new Date().toISOString()
+      });
+      
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('Delete enterprise error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '删除企业失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 计算企业评分
+router.post('/:id/calculate-score', authenticate, requirePermission('view_enterprise'), async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const client = await pool.connect();
+    
+    try {
+      // 检查企业是否存在
+      const enterpriseResult = await client.query('SELECT id FROM enterprises WHERE id = $1', [id]);
+      
+      if (enterpriseResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: '企业不存在',
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // 这里可以添加复杂的评分计算逻辑
+      // 暂时返回随机生成的评分用于演示
+      const scores = {
+        svs: Math.random() * 100, // 供应商稳定性评分
+        des: Math.random() * 100, // 数据完整性评分
+        nis: Math.random() * 100, // 网络影响评分
+        pcs: Math.random() * 100  // 付款能力评分
+      };
+      
+      // 更新企业评分
+      await client.query(`
+        UPDATE enterprises SET
+          svs = $2,
+          des = $3,
+          nis = $4,
+          pcs = $5,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+      `, [id, scores.svs, scores.des, scores.nis, scores.pcs]);
+      
+      return res.status(200).json({
+        success: true,
+        data: scores,
+        message: '企业评分计算完成',
+        timestamp: new Date().toISOString()
+      });
+      
+    } finally {
+      client.release();
+    }
+    
+  } catch (error) {
+    console.error('Calculate enterprise score error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '计算企业评分失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router; 
