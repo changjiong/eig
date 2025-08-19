@@ -9,6 +9,7 @@ import SearchPage from "@/pages/SearchPage";
 import ClientsPage from "@/pages/ClientsPage";
 import DataPage from "@/pages/DataPage";
 import SettingsPage from "@/pages/SettingsPage";
+import DataImportPage from "@/pages/DataImportPage";
 import LoginPage from "@/pages/LoginPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { Toaster } from "@/components/ui/toaster";

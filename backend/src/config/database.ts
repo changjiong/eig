@@ -264,6 +264,23 @@ export const initializeDatabase = async (): Promise<void> => {
       );
     `);
 
+    // 风险预警表
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS risk_warnings (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        enterprise_id UUID REFERENCES enterprises(id) ON DELETE CASCADE,
+        enterprise_name VARCHAR(500) NOT NULL,
+        warning_type VARCHAR(50) NOT NULL CHECK (warning_type IN ('new_risk', 'risk_escalation', 'guarantee_chain', 'financial_anomaly')),
+        severity VARCHAR(20) NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+        message TEXT NOT NULL,
+        risk_factor_id UUID REFERENCES risk_factors(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        is_read BOOLEAN DEFAULT false,
+        resolved_at TIMESTAMP,
+        resolved_by UUID REFERENCES users(id)
+      );
+    `);
+
     // 财务数据表
     await client.query(`
       CREATE TABLE IF NOT EXISTS financial_data (
@@ -447,6 +464,9 @@ export const initializeDatabase = async (): Promise<void> => {
     await client.query('CREATE INDEX IF NOT EXISTS idx_prospects_pcs ON prospects(pcs)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_risk_factors_enterprise_id ON risk_factors(enterprise_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_risk_factors_level ON risk_factors(level)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_risk_warnings_enterprise_id ON risk_warnings(enterprise_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_risk_warnings_severity ON risk_warnings(severity)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_risk_warnings_created_at ON risk_warnings(created_at)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_financial_data_enterprise_id ON financial_data(enterprise_id)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_financial_data_year ON financial_data(year)');
     await client.query('CREATE INDEX IF NOT EXISTS idx_news_enterprise_id ON news(enterprise_id)');

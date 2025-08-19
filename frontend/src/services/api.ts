@@ -312,6 +312,26 @@ export class EnterpriseService {
     
     return response;
   }
+
+  // 批量重新计算所有企业评分
+  static async batchRecalculateScores(limit: number = 50): Promise<ApiResponse<{
+    total: number;
+    processed: number;
+    failed: number;
+    results: any[];
+  }>> {
+    const response = await httpClient.post<ApiResponse<{
+      total: number;
+      processed: number;
+      failed: number;
+      results: any[];
+    }>>('/enterprises/batch/recalculate-scores', { limit });
+    
+    // 批量更新后清除所有企业相关缓存
+    apiCache.clear();
+    
+    return response;
+  }
 }
 
 // 图谱数据服务
@@ -328,8 +348,31 @@ export class GraphService {
   }
 
   // 查找最短路径
-  static async findShortestPath(fromId: string, toId: string): Promise<ApiResponse<any>> {
-    return await httpClient.get<ApiResponse<any>>('/graph/path', { fromId, toId });
+  static async findShortestPath(
+    fromId: string, 
+    toId: string, 
+    maxDepth: number = 6
+  ): Promise<ApiResponse<{
+    path: string[];
+    totalDistance: number;
+    steps: Array<{
+      from: string;
+      to: string;
+      relationshipType: string;
+      strength: number;
+    }>;
+  }>> {
+    const response = await httpClient.get<ApiResponse<{
+      path: string[];
+      totalDistance: number;
+      steps: Array<{
+        from: string;
+        to: string;
+        relationshipType: string;
+        strength: number;
+      }>;
+    }>>(`/graph/shortest-path/${fromId}/${toId}?maxDepth=${maxDepth}`);
+    return response;
   }
 
   // 获取节点邻居 - 修改为使用正确的API
@@ -386,6 +429,58 @@ export class GraphService {
   // 搜索节点
   static async searchNodes(query: string, type?: string, limit: number = 20): Promise<ApiResponse<any>> {
     return await httpClient.get<ApiResponse<any>>('/graph/search/nodes', { query, type, limit });
+  }
+
+  // 影响力分析
+  static async calculateInfluenceScores(nodeIds?: string[]): Promise<ApiResponse<Array<{
+    nodeId: string;
+    centralityScore: number;
+    betweennessCentrality: number;
+    closenesssCentrality: number;
+    eigenvectorCentrality: number;
+    influenceRadius: number;
+  }>>> {
+    const response = await httpClient.post<ApiResponse<Array<{
+      nodeId: string;
+      centralityScore: number;
+      betweennessCentrality: number;
+      closenesssCentrality: number;
+      eigenvectorCentrality: number;
+      influenceRadius: number;
+    }>>>('/graph/influence-analysis', { nodeIds });
+    return response;
+  }
+
+  // 风险传播分析
+  static async analyzeRiskPropagation(
+    riskSourceId: string,
+    riskLevel: number = 1.0,
+    maxPropagationDepth: number = 4
+  ): Promise<ApiResponse<{
+    sourceNode: string;
+    affectedNodes: Array<{
+      nodeId: string;
+      riskLevel: number;
+      propagationPath: string[];
+      distance: number;
+    }>;
+    totalRiskExposure: number;
+  }>> {
+    const response = await httpClient.post<ApiResponse<{
+      sourceNode: string;
+      affectedNodes: Array<{
+        nodeId: string;
+        riskLevel: number;
+        propagationPath: string[];
+        distance: number;
+      }>;
+      totalRiskExposure: number;
+    }>>('/graph/risk-propagation', {
+      riskSourceId,
+      riskLevel,
+      maxPropagationDepth
+    });
+    return response;
   }
 }
 
@@ -818,6 +913,281 @@ export function clearCache() {
   apiCache.clear();
 }
 
+// 数据导入服务
+export class ImportService {
+  // 上传文件并获取预览
+  static async uploadFile(
+    file: File,
+    options: {
+      hasHeader?: boolean;
+      encoding?: string;
+      sheetName?: string;
+    } = {}
+  ): Promise<ApiResponse<{
+    fileName: string;
+    filePath: string;
+    fileSize: number;
+    totalRows: number;
+    columns: Array<{
+      name: string;
+      type: string;
+      sampleValues: any[];
+      emptyCount: number;
+      uniqueCount: number;
+    }>;
+    previewData: any[];
+    uploadTime: string;
+  }>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('hasHeader', String(options.hasHeader !== false));
+    formData.append('encoding', options.encoding || 'utf8');
+    
+    if (options.sheetName) {
+      formData.append('sheetName', options.sheetName);
+    }
+
+    const response = await httpClient.post<ApiResponse<{
+      fileName: string;
+      filePath: string;
+      fileSize: number;
+      totalRows: number;
+      columns: Array<{
+        name: string;
+        type: string;
+        sampleValues: any[];
+        emptyCount: number;
+        uniqueCount: number;
+      }>;
+      previewData: any[];
+      uploadTime: string;
+    }>>('/import/upload', formData);
+    
+    return response;
+  }
+
+  // 开始导入数据
+  static async startImport(
+    fileName: string,
+    filePath: string,
+    dataType: string = 'enterprises',
+    options: any = {}
+  ): Promise<ApiResponse<{ jobId: string }>> {
+    const response = await httpClient.post<ApiResponse<{ jobId: string }>>('/import/start', {
+      fileName,
+      filePath,
+      dataType,
+      options
+    });
+    
+    return response;
+  }
+
+  // 获取导入状态
+  static async getImportStatus(jobId: string): Promise<ApiResponse<{
+    id: string;
+    fileName: string;
+    fileSize: number;
+    status: 'processing' | 'completed' | 'failed' | 'paused';
+    progress: number;
+    totalRows: number;
+    processedRows: number;
+    successfulRows: number;
+    failedRows: number;
+    errorMessages: string[];
+    startTime: string;
+    endTime?: string;
+    estimatedRemainingTime?: number;
+  }>> {
+    const response = await httpClient.get<ApiResponse<{
+      id: string;
+      fileName: string;
+      fileSize: number;
+      status: 'processing' | 'completed' | 'failed' | 'paused';
+      progress: number;
+      totalRows: number;
+      processedRows: number;
+      successfulRows: number;
+      failedRows: number;
+      errorMessages: string[];
+      startTime: string;
+      endTime?: string;
+      estimatedRemainingTime?: number;
+    }>>(`/import/status/${jobId}`);
+    
+    return response;
+  }
+
+  // 获取所有导入任务
+  static async getAllImportJobs(): Promise<ApiResponse<Array<{
+    id: string;
+    fileName: string;
+    fileSize: number;
+    status: 'processing' | 'completed' | 'failed' | 'paused';
+    progress: number;
+    totalRows: number;
+    processedRows: number;
+    successfulRows: number;
+    failedRows: number;
+    errorMessages: string[];
+    startTime: string;
+    endTime?: string;
+    estimatedRemainingTime?: number;
+  }>>> {
+    const response = await httpClient.get<ApiResponse<Array<{
+      id: string;
+      fileName: string;
+      fileSize: number;
+      status: 'processing' | 'completed' | 'failed' | 'paused';
+      progress: number;
+      totalRows: number;
+      processedRows: number;
+      successfulRows: number;
+      failedRows: number;
+      errorMessages: string[];
+      startTime: string;
+      endTime?: string;
+      estimatedRemainingTime?: number;
+    }>>>('/import/jobs');
+    
+    return response;
+  }
+
+  // 清理完成的导入任务
+  static async cleanupJobs(olderThanHours: number = 24): Promise<ApiResponse<null>> {
+    const response = await httpClient.post<ApiResponse<null>>('/import/cleanup', {
+      olderThanHours
+    });
+    
+    return response;
+  }
+
+  // 下载导入模板
+  static getTemplateUrl(type: 'enterprises' | 'clients'): string {
+    return `/api/v1/import/template/${type}`;
+  }
+}
+
+// 风险评估服务
+export class RiskService {
+  // 评估企业风险
+  static async assessEnterpriseRisk(enterpriseId: string): Promise<ApiResponse<{
+    enterpriseId: string;
+    enterpriseName: string;
+    overallRiskLevel: 'low' | 'medium' | 'high' | 'critical';
+    overallRiskScore: number;
+    riskFactors: Array<{
+      id: string;
+      category: string;
+      type: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      score: number;
+      description: string;
+      identifiedAt: string;
+      status: 'active' | 'monitoring' | 'resolved' | 'false_positive';
+    }>;
+    networkRisk: {
+      propagationScore: number;
+      influencedByCount: number;
+      influencingCount: number;
+      criticalPaths: number;
+    };
+    financialRisk: {
+      score: number;
+      indicators: Array<{
+        name: string;
+        value: number;
+        threshold: number;
+        status: 'normal' | 'warning' | 'critical';
+      }>;
+    };
+    assessmentDate: string;
+    validUntil: string;
+  }>> {
+    return await httpClient.post<ApiResponse<any>>(`/risk/assess/${enterpriseId}`, {});
+  }
+
+  // 批量风险评估
+  static async batchAssessRisk(enterpriseIds: string[]): Promise<ApiResponse<{
+    totalRequested: number;
+    totalCompleted: number;
+    results: Record<string, any>;
+  }>> {
+    return await httpClient.post<ApiResponse<any>>('/risk/batch-assess', {
+      enterpriseIds
+    });
+  }
+
+  // 获取风险预警列表
+  static async getRiskWarnings(params?: {
+    isRead?: boolean;
+    severity?: 'info' | 'warning' | 'critical' | 'all';
+    limit?: number;
+    enterpriseId?: string;
+  }): Promise<ApiResponse<Array<{
+    id: string;
+    enterpriseId: string;
+    enterpriseName: string;
+    warningType: 'new_risk' | 'risk_escalation' | 'guarantee_chain' | 'financial_anomaly';
+    severity: 'info' | 'warning' | 'critical';
+    message: string;
+    riskFactorId?: string;
+    createdAt: string;
+    isRead: boolean;
+    resolvedAt?: string;
+    resolvedBy?: string;
+  }>>> {
+    return await httpClient.get<ApiResponse<any>>('/risk/warnings', params);
+  }
+
+  // 创建风险预警
+  static async createRiskWarning(data: {
+    enterpriseId: string;
+    warningType: 'new_risk' | 'risk_escalation' | 'guarantee_chain' | 'financial_anomaly';
+    severity: 'info' | 'warning' | 'critical';
+    message: string;
+    riskFactorId?: string;
+  }): Promise<ApiResponse<{ warningId: string }>> {
+    return await httpClient.post<ApiResponse<{ warningId: string }>>('/risk/warnings', data);
+  }
+
+  // 标记预警为已读
+  static async markWarningAsRead(warningId: string): Promise<ApiResponse<null>> {
+    return await httpClient.patch<ApiResponse<null>>(`/risk/warnings/${warningId}/read`, {});
+  }
+
+  // 获取风险概览
+  static async getRiskOverview(): Promise<ApiResponse<{
+    totalEnterprises: number;
+    riskDistribution: {
+      low: number;
+      medium: number;
+      high: number;
+      critical: number;
+    };
+    activeWarnings: number;
+    criticalWarnings: number;
+    recentAssessments: number;
+  }>> {
+    return await httpClient.get<ApiResponse<any>>('/risk/overview');
+  }
+
+  // 获取企业风险因子
+  static async getRiskFactors(enterpriseId: string): Promise<ApiResponse<any[]>> {
+    return await httpClient.get<ApiResponse<any[]>>(`/risk/factors/${enterpriseId}`);
+  }
+
+  // 更新风险因子状态
+  static async updateRiskFactorStatus(
+    factorId: string, 
+    status: 'active' | 'monitoring' | 'resolved' | 'false_positive'
+  ): Promise<ApiResponse<null>> {
+    return await httpClient.patch<ApiResponse<null>>(`/risk/factors/${factorId}/status`, {
+      status
+    });
+  }
+}
+
 // 导出所有服务
 export const ApiService = {
   Auth: AuthService,
@@ -831,6 +1201,8 @@ export const ApiService = {
   Task: TaskService,
   Event: EventService,
   Prospect: ProspectService,
+  Import: ImportService,
+  Risk: RiskService,
   setAuthToken,
   removeAuthToken,
   clearCache,

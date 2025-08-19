@@ -424,36 +424,139 @@ router.delete('/:id', authenticate, requirePermission('manage_data'), async (req
   }
 });
 
+// 批量重新计算所有企业评分 - 必须在动态路由之前
+router.post('/batch/recalculate-scores', authenticate, requirePermission('manage_system'), async (req: Request, res: Response) => {
+  try {
+    const { limit = 100 } = req.body; // 限制批量处理数量，避免超时
+    
+    // 获取企业列表
+    const client = await pool.connect();
+    let enterpriseIds: string[] = [];
+    
+    try {
+      const result = await client.query(`
+        SELECT id FROM enterprises 
+        WHERE status = 'active' 
+        ORDER BY updated_at ASC 
+        LIMIT $1
+      `, [limit]);
+      
+      enterpriseIds = result.rows.map(row => row.id);
+    } finally {
+      client.release();
+    }
+    
+    if (enterpriseIds.length === 0) {
+      return res.json({
+        success: true,
+        data: { processed: 0, total: 0 },
+        message: '没有需要更新的企业',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // 导入评分服务
+    const ScoringService = (await import('../services/scoringService')).default;
+    
+    let processed = 0;
+    let failed = 0;
+    const results = [];
+    
+    // 批量处理（并发控制）
+    const batchSize = 5; // 控制并发数量
+    for (let i = 0; i < enterpriseIds.length; i += batchSize) {
+      const batch = enterpriseIds.slice(i, i + batchSize);
+      
+      const batchPromises = batch.map(async (id) => {
+        try {
+          const scores = await ScoringService.calculateEnterpriseScore(id);
+          
+          // 更新数据库
+          const updateClient = await pool.connect();
+          try {
+            await updateClient.query(`
+              UPDATE enterprises SET
+                svs = $2,
+                des = $3,
+                nis = $4,
+                pcs = $5,
+                updated_at = CURRENT_TIMESTAMP
+              WHERE id = $1
+            `, [id, scores.svs, scores.des, scores.nis, scores.pcs]);
+            
+            processed++;
+            return { id, success: true, scores };
+          } finally {
+            updateClient.release();
+          }
+        } catch (error) {
+          failed++;
+          return { id, success: false, error: (error as Error).message };
+        }
+      });
+      
+      const batchResults = await Promise.allSettled(batchPromises);
+      results.push(...batchResults.map(result => 
+        result.status === 'fulfilled' ? result.value : { success: false }
+      ));
+    }
+    
+    return res.json({
+      success: true,
+      data: {
+        total: enterpriseIds.length,
+        processed,
+        failed,
+        results: results.slice(0, 10) // 只返回前10个结果作为示例
+      },
+      message: `批量评分计算完成，成功处理 ${processed} 个企业`,
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Batch recalculate scores error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '批量评分计算失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // 计算企业评分
 router.post('/:id/calculate-score', authenticate, requirePermission('view_enterprise'), async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
+    // 使用新的评分服务计算精确评分
+    const ScoringService = (await import('../services/scoringService')).default;
+    
+    // 检查企业是否存在
     const client = await pool.connect();
+    let enterpriseExists = false;
     
     try {
-      // 检查企业是否存在
       const enterpriseResult = await client.query('SELECT id FROM enterprises WHERE id = $1', [id]);
-      
-      if (enterpriseResult.rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: '企业不存在',
-          timestamp: new Date().toISOString()
-        });
-      }
-      
-      // 这里可以添加复杂的评分计算逻辑
-      // 暂时返回随机生成的评分用于演示
-      const scores = {
-        svs: Math.random() * 100, // 供应商稳定性评分
-        des: Math.random() * 100, // 数据完整性评分
-        nis: Math.random() * 100, // 网络影响评分
-        pcs: Math.random() * 100  // 付款能力评分
-      };
-      
-      // 更新企业评分
-      await client.query(`
+      enterpriseExists = enterpriseResult.rows.length > 0;
+    } finally {
+      client.release();
+    }
+    
+    if (!enterpriseExists) {
+      return res.status(404).json({
+        success: false,
+        message: '企业不存在',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    // 计算精确的四维评分
+    const scores = await ScoringService.calculateEnterpriseScore(id as string);
+    
+    // 更新企业评分到数据库
+    const updateClient = await pool.connect();
+    try {
+      await updateClient.query(`
         UPDATE enterprises SET
           svs = $2,
           des = $3,
@@ -471,7 +574,7 @@ router.post('/:id/calculate-score', authenticate, requirePermission('view_enterp
       });
       
     } finally {
-      client.release();
+      updateClient.release();
     }
     
   } catch (error) {

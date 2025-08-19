@@ -573,4 +573,107 @@ router.get('/search/nodes', authenticate, requirePermission('view_graph'), async
   }
 });
 
+// 最短路径分析
+router.get('/shortest-path/:fromId/:toId', authenticate, requirePermission('view_graph'), async (req: Request, res: Response) => {
+  try {
+    const { fromId, toId } = req.params;
+    const { maxDepth = '6' } = req.query;
+    
+    const RelationshipAnalysisService = (await import('../services/relationshipAnalysisService')).default;
+    
+    const result = await RelationshipAnalysisService.findShortestPath(
+      fromId as string, 
+      toId as string, 
+      parseInt(maxDepth as string)
+    );
+    
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: '未找到连接路径',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    return res.json({
+      success: true,
+      data: result,
+      message: '路径查找成功',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Shortest path error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '路径查找失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 影响力分析
+router.post('/influence-analysis', authenticate, requirePermission('view_graph'), async (req: Request, res: Response) => {
+  try {
+    const { nodeIds } = req.body;
+    
+    const RelationshipAnalysisService = (await import('../services/relationshipAnalysisService')).default;
+    
+    const results = await RelationshipAnalysisService.calculateInfluenceScores(nodeIds);
+    
+    return res.json({
+      success: true,
+      data: results,
+      message: '影响力分析完成',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Influence analysis error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '影响力分析失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+// 风险传播分析
+router.post('/risk-propagation', authenticate, requirePermission('view_graph'), async (req: Request, res: Response) => {
+  try {
+    const { riskSourceId, riskLevel = 1.0, maxPropagationDepth = 4 } = req.body;
+    
+    if (!riskSourceId) {
+      return res.status(400).json({
+        success: false,
+        message: '缺少风险源节点ID',
+        timestamp: new Date().toISOString()
+      });
+    }
+    
+    const RelationshipAnalysisService = (await import('../services/relationshipAnalysisService')).default;
+    
+    const result = await RelationshipAnalysisService.analyzeRiskPropagation(
+      riskSourceId,
+      riskLevel,
+      maxPropagationDepth
+    );
+    
+    return res.json({
+      success: true,
+      data: result,
+      message: '风险传播分析完成',
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('Risk propagation analysis error:', error);
+    return res.status(500).json({
+      success: false,
+      message: '风险传播分析失败',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 export default router;

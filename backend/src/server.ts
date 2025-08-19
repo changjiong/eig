@@ -17,6 +17,8 @@ import searchRoutes from './routes/search';
 import taskRoutes from './routes/task';
 import eventRoutes from './routes/event';
 import prospectRoutes from './routes/prospect';
+import importRoutes from './routes/import';
+import riskRoutes from './routes/risk';
 
 // 加载环境变量
 dotenv.config();
@@ -73,6 +75,8 @@ app.use(`${appConfig.apiPrefix}/search`, searchRoutes);
 app.use(`${appConfig.apiPrefix}/tasks`, taskRoutes);
 app.use(`${appConfig.apiPrefix}/events`, eventRoutes);
 app.use(`${appConfig.apiPrefix}/prospects`, prospectRoutes);
+app.use(`${appConfig.apiPrefix}/import`, importRoutes);
+app.use(`${appConfig.apiPrefix}/risk`, riskRoutes);
 
 // 404处理
 app.use((req, res) => {

@@ -24,7 +24,8 @@ export type UserRole = 'admin' | 'manager' | 'analyst' | 'viewer';
 export type Permission =
   | 'view_dashboard' | 'view_enterprise' | 'view_graph' | 'view_prospects'
   | 'view_search' | 'view_clients' | 'manage_data' | 'manage_system'
-  | 'export_data' | 'import_data' | 'user_management';
+  | 'export_data' | 'import_data' | 'user_management'
+  | 'view_risk' | 'manage_risk';
 
 export interface User {
   id: string;

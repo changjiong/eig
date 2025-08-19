@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import MainLayout from "@/components/layout/MainLayout";
 import GraphVisualization from "@/components/graph/GraphVisualization";
+import EnhancedGraphVisualization from "@/components/graph/EnhancedGraphVisualization";
 import {
   Select,
   SelectContent,
@@ -57,6 +58,7 @@ export default function GraphPage() {
   const [filteredData, setFilteredData] = useState<GraphData | null>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [graphStats, setGraphStats] = useState<any>(null);
+  const [useEnhancedView, setUseEnhancedView] = useState(false);
   
   // 筛选状态
   const [searchTerm, setSearchTerm] = useState("");
@@ -318,7 +320,7 @@ export default function GraphPage() {
           <div className="p-4 space-y-6">
             <div className="space-y-2">
               <h3 className="text-sm font-medium">图谱控制</h3>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 mb-3">
                 <Button
                   variant="outline"
                   size="icon"
@@ -339,6 +341,19 @@ export default function GraphPage() {
                   className="h-8 w-8"
                 >
                   <RotateCw className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              {/* 视图切换 */}
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">视图模式</Label>
+                <Button
+                  variant={useEnhancedView ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setUseEnhancedView(!useEnhancedView)}
+                  className="h-7 px-3 text-xs"
+                >
+                  {useEnhancedView ? "增强版" : "标准版"}
                 </Button>
               </div>
             </div>
@@ -511,12 +526,22 @@ export default function GraphPage() {
         {/* Main graph area */}
         <div className="flex-1 overflow-hidden">
           {filteredData ? (
-            <GraphVisualization 
-              width={graphSize.width} 
-              height={graphSize.height} 
-              data={filteredData}
-              onNodeClick={setSelectedNode}
-            />
+            useEnhancedView ? (
+              <EnhancedGraphVisualization 
+                width={graphSize.width} 
+                height={graphSize.height} 
+                data={filteredData}
+                onNodeClick={setSelectedNode}
+                className="w-full h-full"
+              />
+            ) : (
+              <GraphVisualization 
+                width={graphSize.width} 
+                height={graphSize.height} 
+                data={filteredData}
+                onNodeClick={setSelectedNode}
+              />
+            )
           ) : (
             <div className="flex items-center justify-center h-full">
               <div className="flex flex-col items-center gap-4">

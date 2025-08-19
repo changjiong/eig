@@ -218,7 +218,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
   }
 
   return (
-    <div className={`border rounded-lg overflow-hidden ${className}`}>
+    <div className={`relative border rounded-lg overflow-hidden ${className}`}>
       <svg
         ref={svgRef}
         width={width}
@@ -226,8 +226,8 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
         style={{ background: '#f8fafc' }}
       />
       
-             {/* 图例 */}
-       <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-sm">
+      {/* 图例 */}
+      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3 shadow-sm z-10">
          <h4 className="font-medium text-sm mb-2">节点图例</h4>
          <div className="space-y-1 text-xs">
            <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ const GraphVisualization: React.FC<GraphVisualizationProps> = ({
        </div>
       
       {/* 控制面板 */}
-      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-sm">
+      <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-sm z-10">
         <div className="flex gap-2">
           <button 
             className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
