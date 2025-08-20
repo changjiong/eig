@@ -7,6 +7,7 @@ import HomePage from "@/pages/HomePage";
 import EnterprisePage from "@/pages/EnterprisePage";
 import GraphPage from "@/pages/GraphPage";
 import ProspectsPage from "@/pages/ProspectsPage";
+import ProspectDetailPage from "@/pages/ProspectDetailPage";
 import SearchPage from "@/pages/SearchPage";
 import ClientsPage from "@/pages/ClientsPage";
 import DataPage from "@/pages/DataPage";
@@ -60,6 +61,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute requiredPermission="view_prospects">
         <ProspectsPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/prospect/:id",
+    element: (
+      <ProtectedRoute requiredPermission="view_prospects">
+        <ProspectDetailPage />
       </ProtectedRoute>
     )
   },

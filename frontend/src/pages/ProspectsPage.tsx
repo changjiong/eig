@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "@/components/layout/MainLayout";
 import ProspectCard from "@/components/prospects/ProspectCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import ApiService from "@/services/api";
+import { Prospect } from "@/types/database";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,89 +37,42 @@ import {
   Users,
 } from "lucide-react";
 
-// Mock prospects data
-const mockProspects = [
-  {
-    id: "p1",
-    name: "未来科技有限公司",
-    industry: "信息技术",
-    registeredCapital: 50000000,
-    employeeCount: 128,
-    pcsScore: 92,
-    svsScore: 88,
-    desScore: 95,
-    nisScore: 90,
-    discoveryPath: "通过现有客户星达科技的供应链关系发现",
-  },
-  {
-    id: "p2",
-    name: "东方智能系统有限公司",
-    industry: "人工智能",
-    registeredCapital: 30000000,
-    employeeCount: 75,
-    pcsScore: 85,
-    svsScore: 82,
-    desScore: 78,
-    nisScore: 91,
-    discoveryPath: "通过远洋集团的投资关系发现",
-  },
-  {
-    id: "p3",
-    name: "绿源新能源科技有限公司",
-    industry: "新能源",
-    registeredCapital: 100000000,
-    employeeCount: 210,
-    pcsScore: 78,
-    svsScore: 85,
-    desScore: 72,
-    nisScore: 76,
-    discoveryPath: "通过行业关联性分析发现",
-  },
-  {
-    id: "p4",
-    name: "康健医疗器械有限公司",
-    industry: "医疗健康",
-    registeredCapital: 45000000,
-    employeeCount: 156,
-    pcsScore: 88,
-    svsScore: 84,
-    desScore: 90,
-    nisScore: 82,
-    discoveryPath: "通过供应商关系网络发现",
-  },
-  {
-    id: "p5",
-    name: "蓝海数据科技有限公司",
-    industry: "大数据",
-    registeredCapital: 25000000,
-    employeeCount: 68,
-    pcsScore: 83,
-    svsScore: 80,
-    desScore: 87,
-    nisScore: 79,
-    discoveryPath: "通过行业聚类分析发现",
-  },
-  {
-    id: "p6",
-    name: "金辉半导体科技有限公司",
-    industry: "半导体",
-    registeredCapital: 150000000,
-    employeeCount: 320,
-    pcsScore: 94,
-    svsScore: 92,
-    desScore: 89,
-    nisScore: 95,
-    discoveryPath: "通过产业链分析发现",
-  },
-];
+
 
 export default function ProspectsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("discovery");
+  const [prospects, setProspects] = useState<Prospect[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 获取潜客列表
+  useEffect(() => {
+    const fetchProspects = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await ApiService.Prospect.getProspects({ limit: 50 });
+        
+        if (response.success && response.data) {
+          setProspects(response.data);
+        } else {
+          setError(response.message || "获取潜客列表失败");
+        }
+      } catch (err) {
+        console.error("Error fetching prospects:", err);
+        setError("网络错误，请稍后重试");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProspects();
+  }, []);
 
   // Handler for prospect selection
   const handleProspectSelect = (id: string) => {
-    navigate(`/enterprise/${id}`);
+    navigate(`/prospect/${id}`);
   };
 
   return (
@@ -247,13 +203,61 @@ export default function ProspectsPage() {
 
             {/* Prospects Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {mockProspects.map((prospect) => (
-                <ProspectCard
-                  key={prospect.id}
-                  {...prospect}
-                  onSelect={handleProspectSelect}
-                />
-              ))}
+              {loading ? (
+                // 加载骨架屏
+                [...Array(6)].map((_, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <Skeleton className="h-6 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2 mb-4" />
+                    <div className="grid grid-cols-4 gap-2 mb-4">
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                      <Skeleton className="h-12 w-full" />
+                    </div>
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ))
+              ) : error ? (
+                // 错误状态
+                <div className="col-span-full">
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">{error}</p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => window.location.reload()}
+                    >
+                      重试
+                    </Button>
+                  </div>
+                </div>
+              ) : prospects.length === 0 ? (
+                // 空状态
+                <div className="col-span-full">
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">暂无潜客数据</p>
+                  </div>
+                </div>
+              ) : (
+                // 正常显示潜客列表
+                prospects.map((prospect) => (
+                  <ProspectCard
+                    key={prospect.id}
+                    id={prospect.id}
+                    name={prospect.name}
+                    industry={prospect.industry}
+                    registeredCapital={prospect.registeredCapital}
+                    employeeCount={prospect.employeeCount}
+                    pcsScore={prospect.pcs}
+                    svsScore={prospect.svs}
+                    desScore={prospect.des}
+                    nisScore={prospect.nis}
+                    discoveryPath={prospect.discoveryPath}
+                    onSelect={handleProspectSelect}
+                  />
+                ))
+              )}
             </div>
           </TabsContent>
 
