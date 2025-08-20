@@ -207,7 +207,10 @@ export default function EnterprisePage() {
     }
 
     try {
-      setIsLoading(true);
+      // 只在需要时才显示loading
+      if (!enterprise || enterprise.id !== id) {
+        setIsLoading(true);
+      }
       setError(null);
       
       const [enterpriseResponse, graphResponse, statsResponse] = await Promise.allSettled([
@@ -221,6 +224,11 @@ export default function EnterprisePage() {
         setEnterprise(enterpriseResponse.value.data);
       } else {
         console.error('获取企业详情失败:', enterpriseResponse);
+        const errorMsg = enterpriseResponse.status === 'rejected' 
+          ? enterpriseResponse.reason?.message || '网络请求失败' 
+          : '未找到指定企业信息，请检查企业ID是否正确。';
+        setError(errorMsg);
+        return; // 如果企业详情失败，直接返回
       }
 
       // 处理图谱数据
@@ -237,7 +245,12 @@ export default function EnterprisePage() {
 
     } catch (error) {
       console.error('获取企业数据失败:', error);
-      setError('获取企业数据失败，请稍后重试');
+      // 更详细的错误处理
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        setError('网络连接失败，请检查网络连接后重试');
+      } else {
+        setError('获取企业数据失败，请稍后重试');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -267,16 +280,22 @@ export default function EnterprisePage() {
     }
   };
 
-  // 初始化loading状态
+  // 初始化loading状态 - 优化以减少闪烁
   useEffect(() => {
-    setIsLoading(!!id);
-    setError(null);
     if (id) {
-      setEnterprise(null);
-      setGraphData(null);
-      setGraphStats(null);
+      // 只在切换企业时重置状态，避免不必要的闪烁
+      if (!enterprise || enterprise.id !== id) {
+        setIsLoading(true);
+        setError(null);
+        setEnterprise(null);
+        setGraphData(null);
+        setGraphStats(null);
+      }
+    } else {
+      setIsLoading(false);
+      setError(null);
     }
-  }, [id]);
+  }, [id, enterprise]);
 
   // 初始化数据加载
   useEffect(() => {
@@ -307,18 +326,22 @@ export default function EnterprisePage() {
     { label: "行业关联度", value: (enterprise.nis * 0.95) || 0 },
   ] : [];
 
-  // Loading状态 - 只在有ID时才显示loading
-  if (isLoading && id) {
+  // Loading状态 - 只在有ID且真正需要加载时才显示loading
+  if (isLoading && id && (!enterprise || enterprise.id !== id)) {
     return (
       <MainLayout>
         <div className="space-y-6">
+          {/* 面包屑导航骨架 */}
           <Skeleton className="h-8 w-64" />
+          {/* 企业概览卡片骨架 */}
           <Skeleton className="h-48 w-full" />
+          {/* 评分卡片骨架 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
             <Skeleton className="h-32" />
           </div>
+          {/* 内容区域骨架 */}
           <Skeleton className="h-96 w-full" />
         </div>
       </MainLayout>
@@ -355,8 +378,8 @@ export default function EnterprisePage() {
     );
   }
 
-  // 企业不存在
-  if (!enterprise) {
+  // 企业不存在 - 只在非加载状态且有ID时显示
+  if (!enterprise && !isLoading && id) {
     return (
       <MainLayout>
         <div className="space-y-6">
@@ -364,6 +387,9 @@ export default function EnterprisePage() {
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               未找到指定企业信息，请检查企业ID是否正确。
+              <Button variant="link" className="ml-2" onClick={fetchEnterpriseDetails}>
+                重试
+              </Button>
             </AlertDescription>
           </Alert>
         </div>
@@ -519,7 +545,7 @@ export default function EnterprisePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {mockPaths.map((path, index) => (
                       <RelationshipPath
-                        key={index}
+                        key={`path-${index}-${path.title}`}
                         title={path.title}
                         path={path.path}
                         confidence={path.confidence}
@@ -574,9 +600,8 @@ export default function EnterprisePage() {
                     <ScrollArea className="h-[240px]">
                       <div className="space-y-0">
                         {mockNews.map((item, i) => (
-                          <>
+                          <div key={`news-${item.id}-${i}`}>
                             <div
-                              key={item.id}
                               className="flex gap-2 p-4 hover:bg-muted/50 cursor-pointer"
                             >
                               {item.type === "business" ? (
@@ -597,7 +622,7 @@ export default function EnterprisePage() {
                               </div>
                             </div>
                             {i < mockNews.length - 1 && <Separator />}
-                          </>
+                          </div>
                         ))}
                       </div>
                     </ScrollArea>

@@ -53,9 +53,9 @@ class MetricsStore {
   private errorCounts: Map<string, number> = new Map();
   private activeRequests: number = 0;
   
-  // 保留最近1小时的数据
-  private readonly MAX_METRICS_AGE = 60 * 60 * 1000; // 1小时
-  private readonly MAX_METRICS_COUNT = 3600; // 每秒一个数据点
+  // 保留最近30分钟的数据以减少内存使用
+  private readonly MAX_METRICS_AGE = 30 * 60 * 1000; // 30分钟
+  private readonly MAX_METRICS_COUNT = 1800; // 每秒一个数据点，30分钟
 
   // 添加系统指标
   addSystemMetrics(metrics: SystemMetrics): void {
@@ -75,7 +75,7 @@ class MetricsStore {
     // 更新响应时间
     const times = this.responseTimes.get(key) || [];
     times.push(metrics.responseTime);
-    if (times.length > 100) times.shift(); // 保留最近100次请求
+    if (times.length > 50) times.shift(); // 保留最近50次请求以减少内存使用
     this.responseTimes.set(key, times);
     
     // 更新错误计数
@@ -165,7 +165,7 @@ class MetricsStore {
     };
   }
 
-  // 清理旧数据
+  // 清理旧数据 - 更频繁的清理以控制内存使用
   private cleanOldMetrics(): void {
     const cutoff = Date.now() - this.MAX_METRICS_AGE;
     
@@ -179,6 +179,27 @@ class MetricsStore {
     
     if (this.apiMetrics.length > this.MAX_METRICS_COUNT) {
       this.apiMetrics = this.apiMetrics.slice(-this.MAX_METRICS_COUNT);
+    }
+    
+    // 清理旧的请求计数和响应时间映射
+    if (this.requestCounts.size > 100) {
+      const sortedEntries = Array.from(this.requestCounts.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 50);
+      this.requestCounts = new Map(sortedEntries);
+      
+      // 同步清理相关的响应时间和错误计数
+      const keepKeys = new Set(sortedEntries.map(([key]) => key));
+      for (const key of this.responseTimes.keys()) {
+        if (!keepKeys.has(key)) {
+          this.responseTimes.delete(key);
+        }
+      }
+      for (const key of this.errorCounts.keys()) {
+        if (!keepKeys.has(key)) {
+          this.errorCounts.delete(key);
+        }
+      }
     }
   }
 
@@ -242,14 +263,14 @@ export const performanceMonitoring = (req: Request, res: Response, next: NextFun
 export class SystemMonitor {
   private collectInterval: NodeJS.Timeout | null = null;
   private alertThresholds = {
-    memoryUsage: 85, // 内存使用率超过85%
-    responseTime: 2000, // 响应时间超过2秒
-    errorRate: 10, // 错误率超过10%
-    dbConnections: 80 // 数据库连接使用率超过80%
+    memoryUsage: 95, // 内存使用率超过95% (调整阈值以减少误报)
+    responseTime: 5000, // 响应时间超过5秒
+    errorRate: 20, // 错误率超过20% (调整阈值以减少误报)
+    dbConnections: 90 // 数据库连接使用率超过90%
   };
 
-  // 开始监控
-  start(intervalMs: number = 10000): void {
+  // 开始监控 - 调整监控频率以减少资源消耗
+  start(intervalMs: number = 30000): void {
     if (this.collectInterval) {
       this.stop();
     }
@@ -278,6 +299,15 @@ export class SystemMonitor {
       
       // 检查警报条件
       this.checkAlerts(metrics);
+      
+      // 如果内存使用率过高，强制执行垃圾回收
+      const memoryUsage = (metrics.memory.used / metrics.memory.total) * 100;
+      if (memoryUsage > 90 && global.gc) {
+        global.gc();
+        logger.info('Forced garbage collection executed', { 
+          memoryBefore: `${memoryUsage.toFixed(2)}%` 
+        });
+      }
       
     } catch (error) {
       logger.error('Failed to collect system metrics', { error });

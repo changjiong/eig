@@ -130,15 +130,20 @@ export const rateLimitConfigs = {
   login: rateLimit({
     windowMs: 15 * 60 * 1000,
     maxRequests: 5,
-    keyGenerator: (req: Request) => `login:${req.ip || 'unknown'}:${req.body?.email || 'unknown'}`,
+    keyGenerator: (req: Request) => {
+      const ip = req.ip || 'unknown';
+      const email = req.body && typeof req.body === 'object' && req.body.email ? 
+        String(req.body.email) : 'unknown';
+      return `login:${ip}:${email}`;
+    },
     skipSuccessfulRequests: true,
     message: '登录失败次数过多，请15分钟后再试'
   }),
   
-  // API限流：每小时1000次请求
+  // API限流：开发环境宽松，生产环境每小时1000次请求
   api: rateLimit({
     windowMs: 60 * 60 * 1000,
-    maxRequests: 1000,
+    maxRequests: process.env.NODE_ENV === 'development' ? 10000 : 1000, // 开发环境放宽到10000次
     keyGenerator: (req: Request) => req.user?.id || req.ip || 'unknown',
     message: 'API调用次数达到小时限制'
   }),

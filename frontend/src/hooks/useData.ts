@@ -191,7 +191,7 @@ export function useEnterprises(params: { page?: number; pageSize?: number; keywo
     } finally {
       setIsLoading(false);
     }
-  }, [params]);
+  }, [params.page, params.pageSize, params.keyword]); // 明确依赖项以避免不必要的重新渲染
 
   useEffect(() => {
     fetchEnterprises();
@@ -231,7 +231,7 @@ export function useClients(params: { page?: number; pageSize?: number; query?: s
     } finally {
       setIsLoading(false);
     }
-  }, [params]);
+  }, [params.page, params.pageSize, params.query]); // 明确依赖项以避免不必要的重新渲染
 
   useEffect(() => {
     fetchClients();
