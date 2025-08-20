@@ -110,7 +110,7 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
   
   // 重写响应的end方法来记录响应
   const originalEnd = res.end;
-  res.end = function(chunk?: any, encoding?: any) {
+  res.end = function(chunk?: any, encoding?: any, cb?: () => void): Response {
     const duration = Date.now() - startTime;
     
     logger.info('Request completed', {
@@ -122,7 +122,8 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction): 
       userId: req.user?.id
     });
     
-    originalEnd.call(this, chunk, encoding);
+    // 调用原始的end方法并返回结果
+    return originalEnd.call(this, chunk, encoding, cb) as Response;
   };
   
   next();

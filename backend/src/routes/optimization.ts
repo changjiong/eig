@@ -159,7 +159,7 @@ router.post('/explain', authenticate, requireRole('admin'), asyncHandler(async (
       analyze
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         query,
@@ -170,7 +170,7 @@ router.post('/explain', authenticate, requireRole('admin'), asyncHandler(async (
     });
 
   } catch (error) {
-    res.status(400).json({
+    return res.status(400).json({
       success: false,
       message: '查询分析失败: ' + (error as Error).message,
       timestamp: new Date().toISOString()
@@ -226,7 +226,7 @@ router.post('/reindex', authenticate, requireRole('admin'), asyncHandler(async (
       tableName
     });
 
-    res.json({
+    return res.json({
       success: true,
       message: `表 ${tableName} 的索引已重建`,
       data: { tableName },
@@ -234,7 +234,7 @@ router.post('/reindex', authenticate, requireRole('admin'), asyncHandler(async (
     });
 
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '重建索引失败: ' + (error as Error).message,
       timestamp: new Date().toISOString()
@@ -330,7 +330,7 @@ router.post('/query', authenticate, requireRole('admin'), asyncHandler(async (re
       rowCount: result.rowCount
     });
 
-    res.json({
+    return res.json({
       success: true,
       data: {
         rows: result.rows,
@@ -340,7 +340,7 @@ router.post('/query', authenticate, requireRole('admin'), asyncHandler(async (re
     });
 
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '查询执行失败: ' + (error as Error).message,
       timestamp: new Date().toISOString()

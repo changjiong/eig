@@ -23,7 +23,7 @@ router.get('/stats', authenticate, requireRole('admin'), asyncHandler(async (req
 router.get('/sessions', authenticate, requireRole('admin'), asyncHandler(async (req: Request, res: Response) => {
   const userId = req.query.userId as string;
   
-  let sessions;
+  let sessions: any[];
   if (userId) {
     sessions = securityManager.getUserSessions(userId);
   } else {
@@ -31,7 +31,7 @@ router.get('/sessions', authenticate, requireRole('admin'), asyncHandler(async (
     sessions = [];
   }
   
-  res.json({
+  return res.json({
     success: true,
     data: {
       sessions,
@@ -69,7 +69,7 @@ router.post('/force-logout', authenticate, requireRole('admin'), asyncHandler(as
     loggedOutCount
   });
   
-  res.json({
+  return res.json({
     success: true,
     message: `已强制注销 ${loggedOutCount} 个会话`,
     data: { loggedOutCount },
@@ -91,7 +91,7 @@ router.post('/csrf-token', authenticate, asyncHandler(async (req: Request, res: 
   
   const csrfToken = securityManager.generateCSRFToken(userId);
   
-  res.json({
+  return res.json({
     success: true,
     data: { csrfToken },
     timestamp: new Date().toISOString()
@@ -112,7 +112,7 @@ router.post('/validate-password', authenticate, asyncHandler(async (req: Request
   
   const validation = validatePasswordStrength(password);
   
-  res.json({
+  return res.json({
     success: true,
     data: validation,
     timestamp: new Date().toISOString()
@@ -195,14 +195,14 @@ router.post('/change-password', authenticate, asyncHandler(async (req: Request, 
     await pool.query(updateQuery, [newPasswordHash, userId]);
     
     // 强制注销用户的所有会话（除了当前会话）
-    const loggedOutCount = securityManager.forceLogoutUser(userId);
+    const loggedOutCount = securityManager.forceLogoutUser(userId!);
     
     logger.info('Password changed successfully', {
       userId,
       loggedOutSessions: loggedOutCount
     });
     
-    res.json({
+    return res.json({
       success: true,
       message: '密码修改成功，其他会话已被注销',
       data: { loggedOutSessions: loggedOutCount },
@@ -211,7 +211,7 @@ router.post('/change-password', authenticate, asyncHandler(async (req: Request, 
     
   } catch (error) {
     logger.error('Password change failed', { userId, error });
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '密码修改失败',
       timestamp: new Date().toISOString()
@@ -253,7 +253,7 @@ router.post('/unlock-account', authenticate, requireRole('admin'), asyncHandler(
     adminUserId: req.user?.id
   });
   
-  res.json({
+  return res.json({
     success: true,
     message: '账户已解锁',
     data: { identifier },
@@ -329,8 +329,8 @@ router.put('/settings/:userId', authenticate, asyncHandler(async (req: Request, 
   }
   
   try {
-    const updateFields = [];
-    const values = [];
+    const updateFields: string[] = [];
+    const values: any[] = [];
     let paramCount = 0;
     
     const addField = (field: string, value: any) => {
@@ -395,7 +395,7 @@ router.put('/settings/:userId', authenticate, asyncHandler(async (req: Request, 
       updatedBy: req.user?.id
     });
     
-    res.json({
+    return res.json({
       success: true,
       message: '安全设置已更新',
       data: result.rows[0],
@@ -404,7 +404,7 @@ router.put('/settings/:userId', authenticate, asyncHandler(async (req: Request, 
     
   } catch (error) {
     logger.error('Failed to update security settings', { userId, error });
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: '更新安全设置失败',
       timestamp: new Date().toISOString()

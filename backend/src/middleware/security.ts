@@ -212,7 +212,7 @@ class SecurityManager {
   }
 
   // 清理过期会话
-  private cleanupExpiredSessions(): void {
+  public cleanupExpiredSessions(): void {
     const now = Date.now();
     const expiredSessions: string[] = [];
     

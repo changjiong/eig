@@ -1,0 +1,137 @@
+{"timestamp":"2025-08-20T01:02:31.344Z","level":"INFO","message":"System monitoring started","interval":10000}
+{"timestamp":"2025-08-20T01:02:41.356Z","level":"WARN","message":"High memory usage detected","current":"89.17%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:02:50.490Z","level":"INFO","message":"Request started","requestId":"mn11q78rm","method":"POST","path":"/api/v1/auth/login","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"}
+{"timestamp":"2025-08-20T01:02:50.499Z","level":"ERROR","message":"Request error","requestId":"mn11q78rm","method":"POST","path":"/api/v1/auth/login","error":{"name":"TypeError","message":"Cannot read properties of undefined (reading 'email')","stack":"TypeError: Cannot read properties of undefined (reading 'email')\n    at keyGenerator (D:\\Documents\\github\\eig\\backend\\src\\middleware\\rateLimit.ts:133:65)\n    at D:\\Documents\\github\\eig\\backend\\src\\middleware\\rateLimit.ts:45:17\n    at Layer.handleRequest (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:342:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:291:5)\n    at performanceMonitoring (D:\\Documents\\github\\eig\\backend\\src\\middleware\\monitoring.ts:238:3)\n    at Layer.handleRequest (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:342:13)"},"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"}
+{"timestamp":"2025-08-20T01:02:50.504Z","level":"INFO","message":"Request completed","requestId":"mn11q78rm","method":"POST","path":"/api/v1/auth/login","statusCode":500,"duration":14}
+{"timestamp":"2025-08-20T01:02:50.502Z","level":"ERROR","message":"Cannot read properties of undefined (reading 'email')","requestId":"mn11q78rm","statusCode":500,"code":"INTERNAL_SERVER_ERROR","path":"/api/v1/auth/login","method":"POST","stack":"Error: Cannot read properties of undefined (reading 'email')\n    at errorHandler (D:\\Documents\\github\\eig\\backend\\src\\middleware\\errorHandler.ts:173:18)\n    at Layer.handleError (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:116:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:340:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:291:5)\n    at Layer.handleError (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:111:12)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:340:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)"}
+{"timestamp":"2025-08-20T01:02:51.367Z","level":"WARN","message":"High memory usage detected","current":"90.25%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:02:51.367Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:03:01.375Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:03:01.374Z","level":"WARN","message":"High memory usage detected","current":"90.33%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:03:11.383Z","level":"WARN","message":"High memory usage detected","current":"90.35%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:03:11.384Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:03:21.383Z","level":"WARN","message":"High memory usage detected","current":"90.37%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:03:21.383Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:03:31.391Z","level":"WARN","message":"High memory usage detected","current":"90.39%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:03:31.391Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:03:41.391Z","level":"WARN","message":"High memory usage detected","current":"90.40%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:03:41.392Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:03:51.399Z","level":"WARN","message":"High memory usage detected","current":"90.42%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:03:51.401Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:04:01.403Z","level":"WARN","message":"High memory usage detected","current":"90.43%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:01.403Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:04:11.413Z","level":"WARN","message":"High memory usage detected","current":"90.46%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:11.414Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:04:16.372Z","level":"INFO","message":"System monitoring started","interval":10000}
+{"timestamp":"2025-08-20T01:04:21.418Z","level":"WARN","message":"High memory usage detected","current":"90.47%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:21.419Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:04:23.464Z","level":"INFO","message":"Request started","requestId":"9huv063ul","method":"POST","path":"/api/v1/auth/login","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"}
+{"timestamp":"2025-08-20T01:04:23.467Z","level":"ERROR","message":"Request error","requestId":"9huv063ul","method":"POST","path":"/api/v1/auth/login","error":{"name":"TypeError","message":"Cannot read properties of undefined (reading 'email')","stack":"TypeError: Cannot read properties of undefined (reading 'email')\n    at keyGenerator (D:\\Documents\\github\\eig\\backend\\src\\middleware\\rateLimit.ts:133:65)\n    at D:\\Documents\\github\\eig\\backend\\src\\middleware\\rateLimit.ts:45:17\n    at Layer.handleRequest (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:342:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:291:5)\n    at performanceMonitoring (D:\\Documents\\github\\eig\\backend\\src\\middleware\\monitoring.ts:238:3)\n    at Layer.handleRequest (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:342:13)"},"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"}
+{"timestamp":"2025-08-20T01:04:23.468Z","level":"ERROR","message":"Cannot read properties of undefined (reading 'email')","requestId":"9huv063ul","statusCode":500,"code":"INTERNAL_SERVER_ERROR","path":"/api/v1/auth/login","method":"POST","stack":"Error: Cannot read properties of undefined (reading 'email')\n    at errorHandler (D:\\Documents\\github\\eig\\backend\\src\\middleware\\errorHandler.ts:173:18)\n    at Layer.handleError (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:116:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:340:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:291:5)\n    at Layer.handleError (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:111:12)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:340:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)"}
+{"timestamp":"2025-08-20T01:04:23.469Z","level":"INFO","message":"Request completed","requestId":"9huv063ul","method":"POST","path":"/api/v1/auth/login","statusCode":500,"duration":5}
+{"timestamp":"2025-08-20T01:04:24.693Z","level":"INFO","message":"Request started","requestId":"5m6bvo56q","method":"POST","path":"/api/v1/auth/login","ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"}
+{"timestamp":"2025-08-20T01:04:24.695Z","level":"ERROR","message":"Request error","requestId":"5m6bvo56q","method":"POST","path":"/api/v1/auth/login","error":{"name":"TypeError","message":"Cannot read properties of undefined (reading 'email')","stack":"TypeError: Cannot read properties of undefined (reading 'email')\n    at keyGenerator (D:\\Documents\\github\\eig\\backend\\src\\middleware\\rateLimit.ts:133:65)\n    at D:\\Documents\\github\\eig\\backend\\src\\middleware\\rateLimit.ts:45:17\n    at Layer.handleRequest (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:342:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:291:5)\n    at performanceMonitoring (D:\\Documents\\github\\eig\\backend\\src\\middleware\\monitoring.ts:238:3)\n    at Layer.handleRequest (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:152:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:342:13)"},"ip":"::1","userAgent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36 Edg/139.0.0.0"}
+{"timestamp":"2025-08-20T01:04:24.697Z","level":"ERROR","message":"Cannot read properties of undefined (reading 'email')","requestId":"5m6bvo56q","statusCode":500,"code":"INTERNAL_SERVER_ERROR","path":"/api/v1/auth/login","method":"POST","stack":"Error: Cannot read properties of undefined (reading 'email')\n    at errorHandler (D:\\Documents\\github\\eig\\backend\\src\\middleware\\errorHandler.ts:173:18)\n    at Layer.handleError (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:116:17)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:340:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)\n    at next (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:291:5)\n    at Layer.handleError (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\lib\\layer.js:111:12)\n    at trimPrefix (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:340:13)\n    at D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:297:9\n    at processParams (D:\\Documents\\github\\eig\\backend\\node_modules\\router\\index.js:582:12)"}
+{"timestamp":"2025-08-20T01:04:24.698Z","level":"INFO","message":"Request completed","requestId":"5m6bvo56q","method":"POST","path":"/api/v1/auth/login","statusCode":500,"duration":6}
+{"timestamp":"2025-08-20T01:04:26.380Z","level":"WARN","message":"High memory usage detected","current":"87.95%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:31.432Z","level":"WARN","message":"High memory usage detected","current":"90.17%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:31.434Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:04:36.390Z","level":"WARN","message":"High memory usage detected","current":"87.96%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:41.435Z","level":"WARN","message":"High memory usage detected","current":"98.29%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:04:41.437Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:27:39.202Z","level":"WARN","message":"High memory usage detected","current":"98.32%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:27:39.211Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:27:39.235Z","level":"WARN","message":"High memory usage detected","current":"88.87%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:27:49.202Z","level":"WARN","message":"High memory usage detected","current":"98.33%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:27:49.203Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:27:49.241Z","level":"WARN","message":"High memory usage detected","current":"98.36%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:27:59.211Z","level":"WARN","message":"High memory usage detected","current":"98.35%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:27:59.211Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:27:59.241Z","level":"WARN","message":"High memory usage detected","current":"98.38%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:09.211Z","level":"WARN","message":"High memory usage detected","current":"98.36%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:09.212Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:28:09.252Z","level":"WARN","message":"High memory usage detected","current":"98.39%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:19.212Z","level":"WARN","message":"High memory usage detected","current":"98.38%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:19.213Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:28:19.259Z","level":"WARN","message":"High memory usage detected","current":"98.41%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:29.225Z","level":"WARN","message":"High memory usage detected","current":"98.39%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:29.226Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:28:29.261Z","level":"WARN","message":"High memory usage detected","current":"98.44%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:39.234Z","level":"WARN","message":"High memory usage detected","current":"98.41%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:39.235Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:28:39.276Z","level":"WARN","message":"High memory usage detected","current":"98.46%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:49.244Z","level":"WARN","message":"High memory usage detected","current":"98.42%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:49.244Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:28:49.285Z","level":"WARN","message":"High memory usage detected","current":"98.48%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:59.251Z","level":"WARN","message":"High memory usage detected","current":"98.43%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:28:59.251Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:28:59.284Z","level":"WARN","message":"High memory usage detected","current":"98.49%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:09.259Z","level":"WARN","message":"High memory usage detected","current":"98.45%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:09.260Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:29:09.285Z","level":"WARN","message":"High memory usage detected","current":"98.50%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:19.268Z","level":"WARN","message":"High memory usage detected","current":"98.46%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:19.269Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:29:19.292Z","level":"WARN","message":"High memory usage detected","current":"98.51%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:29.275Z","level":"WARN","message":"High memory usage detected","current":"98.48%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:29.275Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:29:29.307Z","level":"WARN","message":"High memory usage detected","current":"98.52%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:39.282Z","level":"WARN","message":"High memory usage detected","current":"98.49%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:39.283Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:29:39.308Z","level":"WARN","message":"High memory usage detected","current":"98.53%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:49.287Z","level":"WARN","message":"High memory usage detected","current":"98.51%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:49.288Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:29:49.318Z","level":"WARN","message":"High memory usage detected","current":"98.54%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:59.291Z","level":"WARN","message":"High memory usage detected","current":"98.52%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:29:59.291Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:29:59.323Z","level":"WARN","message":"High memory usage detected","current":"98.55%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:09.299Z","level":"WARN","message":"High memory usage detected","current":"98.54%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:09.299Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:30:09.329Z","level":"WARN","message":"High memory usage detected","current":"98.56%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:19.308Z","level":"WARN","message":"High memory usage detected","current":"98.55%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:19.309Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:30:19.340Z","level":"WARN","message":"High memory usage detected","current":"98.57%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:29.314Z","level":"WARN","message":"High memory usage detected","current":"98.57%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:29.314Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:30:29.345Z","level":"WARN","message":"High memory usage detected","current":"98.58%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:39.317Z","level":"WARN","message":"High memory usage detected","current":"98.58%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:39.317Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:30:39.348Z","level":"WARN","message":"High memory usage detected","current":"98.59%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:49.317Z","level":"WARN","message":"High memory usage detected","current":"98.60%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:49.317Z","level":"WARN","message":"High error rate detected","current":"100.00%","threshold":"10%"}
+{"timestamp":"2025-08-20T01:30:49.348Z","level":"WARN","message":"High memory usage detected","current":"98.59%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:30:59.356Z","level":"WARN","message":"High memory usage detected","current":"98.60%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:31:09.358Z","level":"WARN","message":"High memory usage detected","current":"98.61%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:31:19.358Z","level":"WARN","message":"High memory usage detected","current":"98.62%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:31:29.363Z","level":"WARN","message":"High memory usage detected","current":"98.63%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:31:39.374Z","level":"WARN","message":"High memory usage detected","current":"98.64%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:31:49.378Z","level":"WARN","message":"High memory usage detected","current":"98.64%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:31:59.388Z","level":"WARN","message":"High memory usage detected","current":"98.65%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:32:09.390Z","level":"WARN","message":"High memory usage detected","current":"98.66%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:32:19.391Z","level":"WARN","message":"High memory usage detected","current":"98.67%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:32:29.406Z","level":"WARN","message":"High memory usage detected","current":"98.68%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:32:39.407Z","level":"WARN","message":"High memory usage detected","current":"98.69%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:32:49.407Z","level":"WARN","message":"High memory usage detected","current":"98.70%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:32:59.407Z","level":"WARN","message":"High memory usage detected","current":"98.70%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:33:09.406Z","level":"WARN","message":"High memory usage detected","current":"98.71%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:33:19.414Z","level":"WARN","message":"High memory usage detected","current":"98.72%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:33:29.414Z","level":"WARN","message":"High memory usage detected","current":"98.73%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:33:39.430Z","level":"WARN","message":"High memory usage detected","current":"98.74%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:33:49.438Z","level":"WARN","message":"High memory usage detected","current":"98.75%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:33:59.445Z","level":"WARN","message":"High memory usage detected","current":"98.76%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:34:09.454Z","level":"WARN","message":"High memory usage detected","current":"98.76%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:34:19.455Z","level":"WARN","message":"High memory usage detected","current":"98.77%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:34:29.462Z","level":"WARN","message":"High memory usage detected","current":"98.78%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:34:39.462Z","level":"WARN","message":"High memory usage detected","current":"98.79%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:34:49.469Z","level":"WARN","message":"High memory usage detected","current":"98.80%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:34:59.478Z","level":"WARN","message":"High memory usage detected","current":"98.81%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:35:09.485Z","level":"WARN","message":"High memory usage detected","current":"98.82%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:35:19.491Z","level":"WARN","message":"High memory usage detected","current":"98.82%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:35:29.502Z","level":"WARN","message":"High memory usage detected","current":"98.83%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:35:39.502Z","level":"WARN","message":"High memory usage detected","current":"98.84%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:35:49.508Z","level":"WARN","message":"High memory usage detected","current":"98.85%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:35:59.513Z","level":"WARN","message":"High memory usage detected","current":"97.69%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:36:09.528Z","level":"WARN","message":"High memory usage detected","current":"97.70%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:36:19.532Z","level":"WARN","message":"High memory usage detected","current":"97.71%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:36:29.547Z","level":"WARN","message":"High memory usage detected","current":"97.72%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:36:39.554Z","level":"WARN","message":"High memory usage detected","current":"97.73%","threshold":"85%"}
+{"timestamp":"2025-08-20T01:36:49.566Z","level":"WARN","message":"High memory usage detected","current":"97.73%","threshold":"85%"}

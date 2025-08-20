@@ -289,12 +289,15 @@ function getSlowedstEndpoints(apiMetrics: any[]): any[] {
   }, {} as Record<string, { times: number[]; count: number }>);
   
   return Object.entries(endpointStats)
-    .map(([endpoint, stats]) => ({
-      endpoint,
-      avgResponseTime: stats.times.reduce((a, b) => a + b, 0) / stats.times.length,
-      requestCount: stats.count,
-      maxResponseTime: Math.max(...stats.times)
-    }))
+    .map(([endpoint, stats]) => {
+      const typedStats = stats as { times: number[]; count: number };
+      return {
+        endpoint,
+        avgResponseTime: typedStats.times.reduce((a: number, b: number) => a + b, 0) / typedStats.times.length,
+        requestCount: typedStats.count,
+        maxResponseTime: Math.max(...typedStats.times)
+      };
+    })
     .sort((a, b) => b.avgResponseTime - a.avgResponseTime)
     .slice(0, 10);
 }
@@ -310,7 +313,7 @@ function analyzePeakHours(apiMetrics: any[]): any {
   
   return Object.entries(hourlyStats)
     .map(([hour, count]) => ({ hour: parseInt(hour), requests: count }))
-    .sort((a, b) => b.requests - a.requests);
+    .sort((a, b) => (b.requests as number) - (a.requests as number));
 }
 
 export default router;

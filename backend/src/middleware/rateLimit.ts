@@ -15,7 +15,7 @@ const store: RateLimitStore = {};
 setInterval(() => {
   const now = Date.now();
   Object.keys(store).forEach(key => {
-    if (store[key].resetTime < now) {
+    if (store[key] && store[key].resetTime < now) {
       delete store[key];
     }
   });
@@ -35,7 +35,7 @@ export const rateLimit = (options: RateLimitOptions) => {
   const {
     windowMs,
     maxRequests,
-    keyGenerator = (req: Request) => req.ip,
+    keyGenerator = (req: Request) => req.ip || 'unknown',
     skipSuccessfulRequests = false,
     message = '请求过于频繁，请稍后再试',
     statusCode = 429
@@ -53,11 +53,17 @@ export const rateLimit = (options: RateLimitOptions) => {
       };
     }
     
+    const currentRecord = store[key];
+    if (!currentRecord) {
+      // 防御性检查，这种情况理论上不应该发生
+      return next();
+    }
+    
     // 检查是否超过限制
-    if (store[key].count >= maxRequests) {
+    if (currentRecord.count >= maxRequests) {
       securityLogger.suspiciousActivity(req, 'RATE_LIMIT_EXCEEDED', {
         key,
-        count: store[key].count,
+        count: currentRecord.count,
         maxRequests,
         windowMs
       });
@@ -65,7 +71,7 @@ export const rateLimit = (options: RateLimitOptions) => {
       res.status(statusCode).json({
         success: false,
         message,
-        retryAfter: Math.ceil((store[key].resetTime - now) / 1000),
+        retryAfter: Math.ceil((currentRecord.resetTime - now) / 1000),
         timestamp: new Date().toISOString()
       });
       return;
@@ -73,23 +79,22 @@ export const rateLimit = (options: RateLimitOptions) => {
     
     // 增加计数（如果配置为跳过成功请求，则在响应后处理）
     if (!skipSuccessfulRequests) {
-      store[key].count++;
+      currentRecord.count++;
     }
     
     // 添加速率限制头
     res.set({
       'X-RateLimit-Limit': maxRequests.toString(),
-      'X-RateLimit-Remaining': Math.max(0, maxRequests - store[key].count).toString(),
-      'X-RateLimit-Reset': new Date(store[key].resetTime).toISOString()
+      'X-RateLimit-Remaining': Math.max(0, maxRequests - currentRecord.count).toString(),
+      'X-RateLimit-Reset': new Date(currentRecord.resetTime).toISOString()
     });
     
     // 如果配置为跳过成功请求，在响应完成后处理计数
     if (skipSuccessfulRequests) {
       res.on('finish', () => {
-        if (res.statusCode < 400) {
-          // 只对成功请求不计数
-        } else {
-          store[key].count++;
+        const record = store[key];
+        if (record && res.statusCode >= 400) {
+          record.count++;
         }
       });
     }
@@ -125,7 +130,7 @@ export const rateLimitConfigs = {
   login: rateLimit({
     windowMs: 15 * 60 * 1000,
     maxRequests: 5,
-    keyGenerator: (req: Request) => `login:${req.ip}:${req.body.email || 'unknown'}`,
+    keyGenerator: (req: Request) => `login:${req.ip || 'unknown'}:${req.body?.email || 'unknown'}`,
     skipSuccessfulRequests: true,
     message: '登录失败次数过多，请15分钟后再试'
   }),
@@ -134,7 +139,7 @@ export const rateLimitConfigs = {
   api: rateLimit({
     windowMs: 60 * 60 * 1000,
     maxRequests: 1000,
-    keyGenerator: (req: Request) => req.user?.id || req.ip,
+    keyGenerator: (req: Request) => req.user?.id || req.ip || 'unknown',
     message: 'API调用次数达到小时限制'
   }),
   
@@ -166,7 +171,7 @@ export const rateLimitConfigs = {
 // IP白名单中间件
 export const ipWhitelist = (allowedIPs: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const clientIP = req.ip;
+    const clientIP = req.ip || 'unknown';
     
     if (!allowedIPs.includes(clientIP)) {
       securityLogger.suspiciousActivity(req, 'IP_NOT_IN_WHITELIST', { clientIP });

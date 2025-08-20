@@ -218,7 +218,7 @@ export const performanceMonitoring = (req: Request, res: Response, next: NextFun
       timestamp: Date.now(),
       userId: req.user?.id,
       userAgent: req.get('User-Agent'),
-      ip: req.ip
+      ip: req.ip || 'unknown'
     };
     
     metricsStore.addApiMetrics(metrics);
