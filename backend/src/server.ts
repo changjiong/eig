@@ -7,6 +7,10 @@ import dotenv from 'dotenv';
 import appConfig from './config/app';
 import { testConnection, initializeDatabase } from './config/database';
 import { seedDatabase } from './config/seedData';
+import { requestLogger, errorLogger, performanceLogger } from './middleware/logger';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler';
+import { rateLimitConfigs } from './middleware/rateLimit';
+import { performanceMonitoring, systemMonitor } from './middleware/monitoring';
 import authRoutes from './routes/auth';
 import enterpriseRoutes from './routes/enterprise';
 import clientRoutes from './routes/client';
@@ -19,6 +23,9 @@ import eventRoutes from './routes/event';
 import prospectRoutes from './routes/prospect';
 import importRoutes from './routes/import';
 import riskRoutes from './routes/risk';
+import monitoringRoutes from './routes/monitoring';
+import optimizationRoutes from './routes/optimization';
+import securityRoutes from './routes/security';
 
 // 加载环境变量
 dotenv.config();
@@ -49,6 +56,15 @@ app.use(cors({
 
 // 日志中间件
 app.use(morgan('combined'));
+app.use(requestLogger);
+app.use(performanceLogger);
+app.use(performanceMonitoring);
+
+// 限流中间件
+app.use('/api/v1/auth/login', rateLimitConfigs.login);
+app.use('/api/v1/search', rateLimitConfigs.search);
+app.use('/api/v1/import', rateLimitConfigs.dataImport);
+app.use('/api/v1', rateLimitConfigs.api);
 
 // 请求解析中间件
 app.use(express.json({ limit: '10mb' }));
@@ -77,29 +93,14 @@ app.use(`${appConfig.apiPrefix}/events`, eventRoutes);
 app.use(`${appConfig.apiPrefix}/prospects`, prospectRoutes);
 app.use(`${appConfig.apiPrefix}/import`, importRoutes);
 app.use(`${appConfig.apiPrefix}/risk`, riskRoutes);
+app.use(`${appConfig.apiPrefix}/monitoring`, monitoringRoutes);
+app.use(`${appConfig.apiPrefix}/optimization`, optimizationRoutes);
+app.use(`${appConfig.apiPrefix}/security`, securityRoutes);
 
-// 404处理
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `路由 ${req.originalUrl} 不存在`,
-    timestamp: new Date().toISOString()
-  });
-});
-
-// 全局错误处理
-app.use((error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error handler:', error);
-  
-  res.status(error.status || 500).json({
-    success: false,
-    message: appConfig.nodeEnv === 'development' 
-      ? error.message || '服务器内部错误'
-      : '服务器内部错误',
-    timestamp: new Date().toISOString(),
-    ...(appConfig.nodeEnv === 'development' && { stack: error.stack })
-  });
-});
+// 错误处理中间件
+app.use(errorLogger);
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 // 启动服务器函数
 const startServer = async () => {
@@ -116,6 +117,10 @@ const startServer = async () => {
       // 插入种子数据
       console.log('🔄 Seeding database...');
       await seedDatabase();
+      
+      // 启动系统监控
+      console.log('🔄 Starting system monitoring...');
+      systemMonitor.start(10000); // 每10秒收集一次指标
     } else {
       console.error('❌ Failed to connect to database. Server will run without database.');
     }

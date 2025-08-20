@@ -1,5 +1,7 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/components/ui/notification";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import HomePage from "@/pages/HomePage";
 import EnterprisePage from "@/pages/EnterprisePage";
@@ -101,12 +103,16 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <TooltipProvider>
-      <AuthProvider>
-        <RouterProvider router={router} />
-        <Toaster />
-      </AuthProvider>
-    </TooltipProvider>
+    <ErrorBoundary>
+      <TooltipProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            <RouterProvider router={router} />
+            <Toaster />
+          </AuthProvider>
+        </NotificationProvider>
+      </TooltipProvider>
+    </ErrorBoundary>
   );
 }
 

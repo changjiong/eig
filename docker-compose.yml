@@ -1,0 +1,234 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:15-alpine
+    container_name: eig-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-eig_database}
+      POSTGRES_USER: ${DB_USER:-eig_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-eig_password}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - eig-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-eig_user} -d ${DB_NAME:-eig_database}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis 缓存 (可选)
+  redis:
+    image: redis:7-alpine
+    container_name: eig-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - eig-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # 后端服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    container_name: eig-backend
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-eig_database}
+      DB_USER: ${DB_USER:-eig_user}
+      DB_PASSWORD: ${DB_PASSWORD:-eig_password}
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "${BACKEND_PORT:-3001}:3001"
+    volumes:
+      - backend_logs:/app/logs
+    networks:
+      - eig-network
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: eig-frontend
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3001/api/v1}
+      VITE_APP_TITLE: ${VITE_APP_TITLE:-EIG 企业智能图谱}
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - eig-network
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  # Nginx 反向代理 (可选)
+  nginx:
+    image: nginx:alpine
+    container_name: eig-nginx
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - nginx_logs:/var/log/nginx
+    networks:
+      - eig-network
+    restart: unless-stopped
+    depends_on:
+      - frontend
+      - backend
+    profiles:
+      - production
+
+  # 监控服务 - Prometheus (可选)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: eig-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - eig-network
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # 监控服务 - Grafana (可选)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: eig-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    ports:
+      - "${GRAFANA_PORT:-3003}:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning:ro
+    networks:
+      - eig-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+  # 日志收集 - ELK Stack (可选)
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: eig-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    networks:
+      - eig-network
+    restart: unless-stopped
+    profiles:
+      - logging
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: eig-logstash
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    volumes:
+      - ./logging/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - backend_logs:/logs:ro
+    networks:
+      - eig-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: eig-kibana
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    networks:
+      - eig-network
+    restart: unless-stopped
+    depends_on:
+      - elasticsearch
+    profiles:
+      - logging
+
+# 网络配置
+networks:
+  eig-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# 数据卷
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  backend_logs:
+    driver: local
+  nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  elasticsearch_data:
+    driver: local
